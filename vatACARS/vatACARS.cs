@@ -20,7 +20,7 @@ namespace vatACARS
 {
     public static class AppData
     {
-        public static Version CurrentVersion { get; } = new Version(1, 1, 0);
+        public static Version CurrentVersion { get; } = new Version(1, 1, 1);
     }
 
     [Export(typeof(IPlugin))]
@@ -236,16 +236,23 @@ namespace vatACARS
 
         private static void DoShowHistoryWindow()
         {
-            if (historyWindow == null || historyWindow.IsDisposed)
+            try
             {
-                historyWindow = new HistoryWindow();
-            }
-            else if (historyWindow.Visible)
-            {
-                return;
-            }
+                if (historyWindow == null || historyWindow.IsDisposed)
+                {
+                    historyWindow = new HistoryWindow();
+                }
+                else if (historyWindow.Visible)
+                {
+                    return;
+                }
 
-            historyWindow.Show(Form.ActiveForm);
+                historyWindow.Show(Form.ActiveForm);
+            }
+            catch (Exception e)
+            {
+                ErrorHandler.GetInstance().AddError($"Error in DoShowHistoryWindow: {e}");
+            }
         }
 
         private static void DoShowPopupWindow(string c, FDR fdr)

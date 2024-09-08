@@ -118,5 +118,41 @@ namespace vatACARS.Properties {
                 this["netChecks"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public global::System.Drawing.Point DispatchStart {
+            get {
+                return ((global::System.Drawing.Point)(this["DispatchStart"]));
+            }
+            set {
+                this["DispatchStart"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public global::System.Drawing.Point HistoryStart {
+            get {
+                return ((global::System.Drawing.Point)(this["HistoryStart"]));
+            }
+            set {
+                this["HistoryStart"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public global::System.Drawing.Point SetupStart {
+            get {
+                return ((global::System.Drawing.Point)(this["SetupStart"]));
+            }
+            set {
+                this["SetupStart"] = value;
+            }
+        }
     }
 }

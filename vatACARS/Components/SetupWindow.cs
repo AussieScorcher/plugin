@@ -488,5 +488,19 @@ namespace vatACARS
                 Properties.Settings.Default.Save();
             }
         }
+
+        private void SetupWindow_LocationChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.SetupStart = this.Location;
+            Properties.Settings.Default.Save();
+        }
+
+        private void SetupWindow_Load(object sender, EventArgs e)
+        {
+            if (Properties.Settings.Default.SetupStart != null)
+            {
+                this.Location = Properties.Settings.Default.SetupStart;
+            }
+        }
     }
 }

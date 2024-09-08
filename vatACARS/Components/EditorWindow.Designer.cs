@@ -163,7 +163,6 @@ namespace vatACARS.Components
             this.scr_messageSelector.Location = new System.Drawing.Point(559, 205);
             this.scr_messageSelector.Name = "scr_messageSelector";
             this.scr_messageSelector.Orientation = System.Windows.Forms.ScrollOrientation.VerticalScroll;
-            this.scr_messageSelector.PercentageValue = 0F;
             this.scr_messageSelector.PreferredHeight = 8;
             this.scr_messageSelector.Size = new System.Drawing.Size(17, 176);
             this.scr_messageSelector.TabIndex = 5;

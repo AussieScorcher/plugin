@@ -384,9 +384,11 @@
             this.Name = "SetupWindow";
             this.Resizeable = false;
             this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "vatACARS Setup";
+            this.Load += new System.EventHandler(this.SetupWindow_Load);
             this.Shown += new System.EventHandler(this.SetupWindow_Shown);
+            this.LocationChanged += new System.EventHandler(this.SetupWindow_LocationChanged);
             ((System.ComponentModel.ISupportInitialize)(this.sld_auralAlertVolume)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

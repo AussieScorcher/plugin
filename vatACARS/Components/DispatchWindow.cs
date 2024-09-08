@@ -561,5 +561,20 @@ namespace vatACARS.Components
             }
             UpdateMessages();
         }
+
+        private void DispatchWindow_LocationChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.DispatchStart = this.Location;
+            Properties.Settings.Default.Save();
+        }
+
+
+        private void DispatchWindow_Load(object sender, EventArgs e)
+        {
+            if (Properties.Settings.Default.DispatchStart != null)
+            {
+                this.Location = Properties.Settings.Default.DispatchStart;
+            }
+        }
     }
 }

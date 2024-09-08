@@ -476,17 +476,27 @@ namespace vatACARS.Components
                 // TODO: replace placeholder content
                 foreach (ResponseItem item in response.Where(obj => obj != null && obj.Entry.Element != ""))
                 {
+                    string element = item.Entry.Element;
                     if (item.Placeholders != null)
                     {
                         foreach (ResponseItemPlaceholderData placeholder in item.Placeholders)
                         {
-                            item.Entry.Element = item.Entry.Element.Replace(placeholder.Placeholder, $"@{placeholder.UserValue}@");
+                            if (placeholder != null && !string.IsNullOrEmpty(placeholder.Placeholder) && !string.IsNullOrEmpty(placeholder.UserValue))
+                            {
+                                int startIndex = element.IndexOf(placeholder.Placeholder);
+                                if (startIndex != -1)
+                                {
+                                    int length = placeholder.Placeholder.Length;
+                                    element = element.Substring(0, startIndex) + $"@{placeholder.UserValue}@" + element.Substring(startIndex + length);
+                                }
+                            }
                         }
                     }
                     else
                     {
                         //idk
                     }
+                    item.Entry.Element = element;
                 }
 
                 if (selectedMsg is TelexMessage)
@@ -1037,7 +1047,12 @@ namespace vatACARS.Components
             {
                 if (item != null && !string.IsNullOrEmpty(item.Placeholder) && !string.IsNullOrEmpty(item.UserValue))
                 {
-                    responseText = responseText.Replace(item.Placeholder, item.UserValue);
+                    int startIndex = responseText.IndexOf(item.Placeholder);
+                    if (startIndex != -1)
+                    {
+                        int length = item.Placeholder.Length;
+                        responseText = responseText.Substring(0, startIndex) + item.UserValue + responseText.Substring(startIndex + length);
+                    }
                 }
             }
             currentresponselabel.Text = responseText;

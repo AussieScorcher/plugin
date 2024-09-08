@@ -90,7 +90,6 @@ namespace vatACARS.Components
             this.scr_quickfill.Location = new System.Drawing.Point(252, 2);
             this.scr_quickfill.Name = "scr_quickfill";
             this.scr_quickfill.Orientation = System.Windows.Forms.ScrollOrientation.VerticalScroll;
-            this.scr_quickfill.PercentageValue = 0F;
             this.scr_quickfill.PreferredHeight = 10;
             this.scr_quickfill.Size = new System.Drawing.Size(20, 211);
             this.scr_quickfill.TabIndex = 9;

@@ -245,6 +245,7 @@ namespace vatACARS.Helpers
                             part = part.Replace("A", "");
                             if (int.TryParse(part, out blockValue))
                             {
+                                blockValue *= 100;
                                 if (!firstValueSet)
                                 {
                                     firstValue = blockValue;

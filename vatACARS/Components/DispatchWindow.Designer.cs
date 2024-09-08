@@ -30,12 +30,12 @@ namespace vatACARS.Components
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.ListViewGroup listViewGroup7 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup8 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup9 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup10 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup11 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup12 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup19 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup20 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup21 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup22 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup23 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup24 = new System.Windows.Forms.ListViewGroup("", System.Windows.Forms.HorizontalAlignment.Left);
             this.insetPanel2 = new vatsys.InsetPanel();
             this.lvw_messages = new vatsys.ListViewEx();
             this.col_timestamp = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -71,25 +71,25 @@ namespace vatACARS.Components
             this.col_message});
             this.lvw_messages.Font = new System.Drawing.Font("Terminus (TTF)", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
             this.lvw_messages.FullRowSelect = true;
-            listViewGroup7.Header = "";
-            listViewGroup7.Name = "downlink";
-            listViewGroup8.Header = "";
-            listViewGroup8.Name = "downlinkResponseNotRequired";
-            listViewGroup9.Header = "";
-            listViewGroup9.Name = "ADSC";
-            listViewGroup10.Header = "";
-            listViewGroup10.Name = "defer";
-            listViewGroup11.Header = "";
-            listViewGroup11.Name = "uplink";
-            listViewGroup12.Header = "";
-            listViewGroup12.Name = "finished";
+            listViewGroup19.Header = "";
+            listViewGroup19.Name = "downlink";
+            listViewGroup20.Header = "";
+            listViewGroup20.Name = "downlinkResponseNotRequired";
+            listViewGroup21.Header = "";
+            listViewGroup21.Name = "ADSC";
+            listViewGroup22.Header = "";
+            listViewGroup22.Name = "defer";
+            listViewGroup23.Header = "";
+            listViewGroup23.Name = "uplink";
+            listViewGroup24.Header = "";
+            listViewGroup24.Name = "finished";
             this.lvw_messages.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup7,
-            listViewGroup8,
-            listViewGroup9,
-            listViewGroup10,
-            listViewGroup11,
-            listViewGroup12});
+            listViewGroup19,
+            listViewGroup20,
+            listViewGroup21,
+            listViewGroup22,
+            listViewGroup23,
+            listViewGroup24});
             this.lvw_messages.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             this.lvw_messages.HideSelection = false;
             this.lvw_messages.Location = new System.Drawing.Point(3, 3);
@@ -103,7 +103,7 @@ namespace vatACARS.Components
             this.lvw_messages.View = System.Windows.Forms.View.Details;
             this.lvw_messages.DrawItem += new System.Windows.Forms.DrawListViewItemEventHandler(this.lvw_messages_DrawItem);
             this.lvw_messages.MouseUp += new System.Windows.Forms.MouseEventHandler(this.lvw_messages_MouseUp);
-            this.lvw_messages.MouseWheel += new MouseEventHandler(this.MessageScroll_MouseWheel);
+            this.lvw_messages.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.MessageScroll_MouseWheel);
             // 
             // col_timestamp
             // 
@@ -130,7 +130,7 @@ namespace vatACARS.Components
             this.scr_messages.Value = 0;
             this.scr_messages.Scroll += new System.EventHandler(this.scr_messages_Scroll);
             this.scr_messages.Scrolling += new System.EventHandler(this.scr_messages_Scroll);
-            this.scr_messages.MouseWheel += new MouseEventHandler(this.MessageScroll_MouseWheel);
+            this.scr_messages.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.MessageScroll_MouseWheel);
             // 
             // insetPanel1
             // 
@@ -210,9 +210,12 @@ namespace vatACARS.Components
             this.MiddleClickClose = false;
             this.MinimumSize = new System.Drawing.Size(537, 354);
             this.Name = "DispatchWindow";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Dispatch Interface";
+            this.Load += new System.EventHandler(this.DispatchWindow_Load);
             this.ResizeBegin += new System.EventHandler(this.DispatchWindow_ResizeBegin);
             this.ResizeEnd += new System.EventHandler(this.DispatchWindow_ResizeEnd);
+            this.LocationChanged += new System.EventHandler(this.DispatchWindow_LocationChanged);
             this.SizeChanged += new System.EventHandler(this.DispatchWindow_SizeChanged);
             this.insetPanel2.ResumeLayout(false);
             this.insetPanel1.ResumeLayout(false);

@@ -57,6 +57,10 @@ namespace vatACARS.Components
 
         private void HistoryWindow_Load(object sender, EventArgs e)
         {
+            if (Properties.Settings.Default.HistoryStart != null)
+            {
+                this.Location = Properties.Settings.Default.HistoryStart;
+            }
         }
 
         private void HistoryWindow_ResizeEnd(object sender, EventArgs e)
@@ -245,6 +249,12 @@ namespace vatACARS.Components
                 return;
             }
             tbx_acid_TextChanged(sender, EventArgs.Empty);
+        }
+
+        private void HistoryWindow_LocationChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.HistoryStart = this.Location;
+            Properties.Settings.Default.Save();
         }
     }
 }
