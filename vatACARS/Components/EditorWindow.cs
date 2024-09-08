@@ -779,11 +779,11 @@ namespace vatACARS.Components
                             string setting = data.Setting;
                             if (placesub == "UNIT NAME")
                             {
-                                item.UserValue = Regex.Replace(setting, @"[\d\.]", string.Empty);
+                                item.UserValue = Regex.Replace(setting, @"(?<!_)\d+(?!_)|[^\w-_]", string.Empty);
                             }
                             else if (placesub == "FREQUENCY")
                             {
-                                item.UserValue = Regex.Replace(setting, @"[^\d\.]", string.Empty);
+                                item.UserValue = Regex.Replace(setting, @"(?:_[\d]+_|[^\d\.])", string.Empty);
                             }
                             else if (placesub == "FREE TEXT")
                             {
