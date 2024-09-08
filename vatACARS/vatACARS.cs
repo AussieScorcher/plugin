@@ -81,6 +81,60 @@ namespace vatACARS
                 Station[] stations = getAllStations();
                 Station cStation = stations.FirstOrDefault(station => station.Callsign == flightDataRecord.Callsign);
 
+            // Saving for future use
+            // if (cStation != null)
+            // {
+            //     if (track == null) return null;
+
+            //     object s = track.SourceData;
+            //     if (s.ToString().Contains("[") || s.ToString().Contains("]"))
+            //     {
+            //         // dont set if already set
+            //     }
+            //     else
+            //     {
+            //         // clone the fdr
+            //         FDR f = ObjectUtils.CloneObject(flightDataRecord);
+
+            //         var callsignProperty = typeof(FDR).GetProperty("Callsign");
+            //         if (callsignProperty != null && callsignProperty.CanWrite)
+            //         {   // update the callsign
+            //             var originalCallsign = (string)callsignProperty.GetValue(flightDataRecord);
+            //             callsignProperty.SetValue(f, $"[{originalCallsign}]");
+            //         }
+            //         RDP.RadarTrack tck = s as RDP.RadarTrack;
+            //         tck.CoupledFDR = f;
+            //         if (tck != null)
+            //         {
+            //             track.UpdateTrack(tck, track.Type);
+            //         }
+            //         else
+            //         {
+            //             //do nothing
+
+            //         }
+            //     }
+            // }
+            // else
+            // { // reset to old fdr if not connected anymore.
+            //     Station nStation = stations.FirstOrDefault(station => 
+            //         station.Callsign == flightDataRecord.Callsign
+            //             .Replace("[", string.Empty)
+            //             .Replace("]", string.Empty)
+            //             .Trim());
+            //     if (nStation == null) 
+            //     {
+            //         RDP.RadarTrack tck = track.SourceData as RDP.RadarTrack;
+            //         FDR fdr = GetFDRs.FirstOrDefault(f => f.Callsign == flightDataRecord.Callsign
+            //             .Replace("[", string.Empty)
+            //             .Replace("]", string.Empty)
+            //             .Trim());
+            //         flightDataRecord.CancellationTime = DateTime.UtcNow.AddSeconds(10);
+            //         tck.CoupledFDR = fdr;
+            //         track.UpdateTrack(tck, track.Type);
+            //     }
+            // }if (cStation == null)
+
                 TelexMessage[] telexMessages = getAllTelexMessages();
                 CPDLCMessage[] CPDLCMessages = getAllCPDLCMessages();
                 IMessageData telexDownlink;
@@ -147,9 +201,8 @@ namespace vatACARS
                         return null;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                logger.Log($"Error in GetCustomLabelItem: {e.Message}");
                 return null;
             }
         }
