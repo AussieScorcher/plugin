@@ -169,6 +169,7 @@
     <Compile Include="Util\JSONInterface.cs" />
     <Compile Include="Util\LabelsXMLPatcher.cs" />
     <Compile Include="Util\Logger.cs" />
+    <Compile Include="Util\ObjectUtils.cs" />
     <Compile Include="Util\Types.cs" />
     <Compile Include="Util\VatACARSInterface.cs" />
     <Compile Include="Util\XMLInterface.cs" />
