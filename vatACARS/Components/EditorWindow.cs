@@ -46,7 +46,7 @@ namespace vatACARS.Components
         private List<TextLabel> responselabels = new List<TextLabel>();
         private List<GenericButton> scrollerButtons = new List<GenericButton>();
 
-        public EditorWindow()
+        public EditorWindow(string initialEntryId = null)
         {
             InitializeComponent();
             StyleComponent();
@@ -151,6 +151,11 @@ namespace vatACARS.Components
 
             response = new ResponseItem[5];
             currentresponselabel.Invalidate();
+
+            if (!string.IsNullOrEmpty(initialEntryId))
+            {
+                InitializeWithResponse(initialEntryId);
+            }
         }
 
         public static string FormatSpeed(string s)
@@ -167,6 +172,69 @@ namespace vatACARS.Components
                 return "M" + s;
             }
             return s;
+        }
+
+        public void HandleResponse(UplinkEntry selected)
+        {
+            var placeholders = placeholderParse.Matches(selected.Element);
+
+            response[responseIndex] = new ResponseItem()
+            {
+                Entry = selected,
+                Placeholders = null,
+            };
+
+            if (placeholders.Count > 0)
+            {
+                response[responseIndex].Placeholders = new ResponseItemPlaceholderData[placeholders.Count];
+                Graphics graphics = currentresponselabel.CreateGraphics();
+                StringFormat format = new StringFormat
+                {
+                    LineAlignment = StringAlignment.Center,
+                    Alignment = StringAlignment.Near
+                };
+
+                for (int i = 0; i < placeholders.Count; i++)
+                {
+                    CharacterRange[] ranges = { new CharacterRange(placeholders[i].Index, placeholders[i].Length) };
+                    format.SetMeasurableCharacterRanges(ranges);
+
+                    Region region = graphics.MeasureCharacterRanges(response[responseIndex].Entry.Element, currentresponselabel.Font, currentresponselabel.Bounds, format)[0];
+                    Rectangle bounds = Rectangle.Round(region.GetBounds(graphics));
+
+                    response[responseIndex].Placeholders[i] = new ResponseItemPlaceholderData()
+                    {
+                        Placeholder = placeholders[i].Value,
+                        UserValue = "",
+                        TopLeftLoc = new Point(bounds.X - 4, bounds.Y - 2),
+                        Size = new Size(bounds.Width + 4, bounds.Height + 2)
+                    };
+                }
+            }
+            else
+            {
+                response[responseIndex].Placeholders = new ResponseItemPlaceholderData[placeholders.Count];
+            }
+            UpdateScrollerButton();
+            UpdateScroll();
+            currentresponselabel.Text = selected.Element;
+            currentresponselabel.Refresh();
+        }
+
+        public void InitializeWithResponse(string entryId)
+        {
+            var entry = XMLReader.uplinks.Entries
+                .Where(e => e.Code == entryId)
+                .FirstOrDefault();
+
+            if (entry != null)
+            {
+                HandleResponse((UplinkEntry)entry.Clone());
+            }
+            else
+            {
+                logger.Log($"Entry with ID {entryId} not found.");
+            }
         }
 
         public void lbl_response_Paint(object sender, PaintEventArgs e)
@@ -531,10 +599,10 @@ namespace vatACARS.Components
                 {
                     var responseCode = "NE";
                     if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "W/U")) responseCode = "WU";
-                    if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "A/N")) responseCode = "AN";
-                    if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "R")) responseCode = "R";
-                    if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "Y")) responseCode = "Y";
-                    if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "NE")) responseCode = "NE";
+                    else if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "A/N")) responseCode = "AN";
+                    else if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "R")) responseCode = "R";
+                    else if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "Y")) responseCode = "Y";
+                    else if (response.Any(obj => obj != null && obj.Entry != null && obj.Entry.Response == "NE")) responseCode = "NE";
                     CPDLCMessage message = message1;
                     string encodedMessage = string.Join("\n", response.Where(obj => obj != null && obj.Entry != null && obj.Entry.Element != "").Select(obj => obj.Entry.Element));
                     if (encodedMessage.Length == 0)
@@ -664,53 +732,6 @@ namespace vatACARS.Components
             }
 
             return segments.ToArray();
-        }
-
-        private void HandleResponse(UplinkEntry selected)
-        {
-            var placeholders = placeholderParse.Matches(selected.Element);
-
-            response[responseIndex] = new ResponseItem()
-            {
-                Entry = selected,
-                Placeholders = null,
-            };
-
-            if (placeholders.Count > 0)
-            {
-                response[responseIndex].Placeholders = new ResponseItemPlaceholderData[placeholders.Count];
-                Graphics graphics = currentresponselabel.CreateGraphics();
-                StringFormat format = new StringFormat
-                {
-                    LineAlignment = StringAlignment.Center,
-                    Alignment = StringAlignment.Near
-                };
-
-                for (int i = 0; i < placeholders.Count; i++)
-                {
-                    CharacterRange[] ranges = { new CharacterRange(placeholders[i].Index, placeholders[i].Length) };
-                    format.SetMeasurableCharacterRanges(ranges);
-
-                    Region region = graphics.MeasureCharacterRanges(response[responseIndex].Entry.Element, currentresponselabel.Font, currentresponselabel.Bounds, format)[0];
-                    Rectangle bounds = Rectangle.Round(region.GetBounds(graphics));
-
-                    response[responseIndex].Placeholders[i] = new ResponseItemPlaceholderData()
-                    {
-                        Placeholder = placeholders[i].Value,
-                        UserValue = "",
-                        TopLeftLoc = new Point(bounds.X - 4, bounds.Y - 2),
-                        Size = new Size(bounds.Width + 4, bounds.Height + 2)
-                    };
-                }
-            }
-            else
-            {
-                response[responseIndex].Placeholders = new ResponseItemPlaceholderData[placeholders.Count];
-            }
-            UpdateScrollerButton();
-            UpdateScroll();
-            currentresponselabel.Text = selected.Element;
-            currentresponselabel.Refresh();
         }
 
         private void InitializeResponselabels()
