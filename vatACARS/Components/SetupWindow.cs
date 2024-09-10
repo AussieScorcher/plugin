@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using vatACARS.Components;
 using vatACARS.Util;
 using vatsys;
 using static vatACARS.Helpers.Transceiver;
@@ -19,6 +20,7 @@ namespace vatACARS
 
         private static bool Hoppies = Properties.Settings.Default.enableHoppies;
         private static bool sendReports = Properties.Settings.Default.sendReports;
+        private static ProfileSelector profileSelector;
         private Logger logger = new Logger("Setup Window");
 
         public SetupWindow()
@@ -27,6 +29,20 @@ namespace vatACARS
             StyleComponent();
             this.Text = ($"vatACARS Setup v{AppData.CurrentVersion}");
             Properties.Settings.Default.PropertyChanged += Default_PropertyChanged;
+        }
+
+        private static void DoShowProfileSelector()
+        {
+            if (profileSelector == null || profileSelector.IsDisposed)
+            {
+                profileSelector = new ProfileSelector();
+            }
+            else if (profileSelector.Visible)
+            {
+                return;
+            }
+
+            profileSelector.Show(Form.ActiveForm);
         }
 
         public static void SetHoppies(bool value)
@@ -501,6 +517,11 @@ namespace vatACARS
             {
                 this.Location = Properties.Settings.Default.SetupStart;
             }
+        }
+
+        private void btn_profile_Click(object sender, EventArgs e)
+        {
+            DoShowProfileSelector();
         }
     }
 }

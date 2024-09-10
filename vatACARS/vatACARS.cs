@@ -48,11 +48,11 @@ namespace vatACARS
             UpdateTimer = new System.Timers.Timer(10000.0);
             UpdateTimer.Elapsed += new ElapsedEventHandler(UpdateTimer_Elapsed);
             UpdateTimer.Start();
-
             // Create directories only if they don't exist
             Directory.CreateDirectory(dataPath);
             Directory.CreateDirectory(Path.Combine(dataPath, "audio"));
             Directory.CreateDirectory(Path.Combine(dataPath, "data"));
+            Directory.CreateDirectory(Path.Combine(dataPath, "profiles"));
             if (File.Exists($"{dataPath}\\vatACARS.log")) File.Delete($"{dataPath}\\vatACARS.log");
 
             logger.Log("Starting...");
@@ -541,6 +541,7 @@ namespace vatACARS
                 XMLReader.MakeUplinks();
                 JSONReader.MakeQuickFillItems();
                 LabelsXMLPatcher.Patch();
+                ProfileManager.LoadProfiles();
 
 
                 _ = Task.Run(() => CrashChecker.CheckForCrashes());
