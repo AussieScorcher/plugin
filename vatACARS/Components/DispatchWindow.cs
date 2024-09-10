@@ -44,7 +44,7 @@ namespace vatACARS.Components
             UpdateMessages();
         }
 
-        public static void ShowEditorWindow(IMessageData msg)
+        public static void ShowEditorWindow(IMessageData msg, string entry = null)
         {
             foreach (Form form in Application.OpenForms)
             {
@@ -61,7 +61,7 @@ namespace vatACARS.Components
                     }
                 }
             }
-            EditorWindow window = new EditorWindow();
+            EditorWindow window = new EditorWindow(entry);
             window.selectedMsg = msg;
             window.Show(ActiveForm);
         }
@@ -265,6 +265,20 @@ namespace vatACARS.Components
             };
 
             tbl_connected.Controls.Add(callsignLabel);
+        }
+
+        private void DispatchWindow_Load(object sender, EventArgs e)
+        {
+            if (Properties.Settings.Default.DispatchStart != null)
+            {
+                this.Location = Properties.Settings.Default.DispatchStart;
+            }
+        }
+
+        private void DispatchWindow_LocationChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.DispatchStart = this.Location;
+            Properties.Settings.Default.Save();
         }
 
         private void DispatchWindow_ResizeBegin(object sender, EventArgs e)
@@ -560,21 +574,6 @@ namespace vatACARS.Components
                 return;
             }
             UpdateMessages();
-        }
-
-        private void DispatchWindow_LocationChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.DispatchStart = this.Location;
-            Properties.Settings.Default.Save();
-        }
-
-
-        private void DispatchWindow_Load(object sender, EventArgs e)
-        {
-            if (Properties.Settings.Default.DispatchStart != null)
-            {
-                this.Location = Properties.Settings.Default.DispatchStart;
-            }
         }
     }
 }
