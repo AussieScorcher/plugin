@@ -16,31 +16,21 @@ namespace vatACARS.Util
                 XmlDocument doc = new XmlDocument();
                 doc.Load(hardcodedFilePath);
 
-                XmlNode normalLabel = doc.SelectSingleNode("//Label[@Type='Normal']");
-                if (normalLabel != null)
+                XmlNodeList acidItems = doc.SelectNodes("//Item[@Type='LABEL_ITEM_ACID']");
+                foreach (XmlElement acidItem in acidItems)
                 {
-                    if (normalLabel.SelectSingleNode("DataLine/Item[@Type='LABEL_ITEM_CPDLCAIR']") == null)
-                    {
-                        doc.Save($"{hardcodedFilePath}.bak");
-                        XmlElement newDataLine = doc.CreateElement("DataLine");
-                        XmlElement newItem = doc.CreateElement("Item");
-                        newItem.SetAttribute("Type", "LABEL_ITEM_CPDLCAIR");
-                        newDataLine.AppendChild(newItem);
-                        normalLabel.AppendChild(newDataLine);
-                    }
+                    acidItem.SetAttribute("Type", "LABEL_ITEM_ACARS_ACID");
+                    acidItem.SetAttribute("LeaderLineAnchor", "True");
                 }
 
-                XmlNode groundDepartureLabel = doc.SelectSingleNode("//Label[@Type='GroundDeparture']");
-                if (groundDepartureLabel != null)
+                if (acidItems.Count <= 0) 
                 {
-                    if (groundDepartureLabel.SelectSingleNode("DataLine/Item[@Type='LABEL_ITEM_CPDLCGROUND']") == null)
-                    {
-                        XmlElement newDataLine = doc.CreateElement("DataLine");
-                        XmlElement newItem = doc.CreateElement("Item");
-                        newItem.SetAttribute("Type", "LABEL_ITEM_CPDLCGROUND");
-                        newDataLine.AppendChild(newItem);
-                        groundDepartureLabel.AppendChild(newDataLine);
-                    }
+                    logger.Log("No acid items found");
+                }
+                else
+                {
+                    logger.Log($"Patched {acidItems.Count} acid items");
+                    ErrorHandler.GetInstance().AddError("vatACARS has updated Labels.xml. Please restart vatSys.");
                 }
 
                 doc.Save(hardcodedFilePath);

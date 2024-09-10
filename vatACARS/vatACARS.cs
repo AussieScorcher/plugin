@@ -73,78 +73,38 @@ namespace vatACARS
 
             setupWindow.Show(Form.ActiveForm);
         }
-
         public CustomLabelItem GetCustomLabelItem(string itemType, Track track, FDR flightDataRecord, RDP.RadarTrack radarTrack)
         {
+            if (flightDataRecord == null || track == null || radarTrack == null) return null;
             try
             {
-                Station[] stations = getAllStations();
+                Station[] stations = getAllStations() ?? Array.Empty<Station>();
                 Station cStation = stations.FirstOrDefault(station => station.Callsign == flightDataRecord.Callsign);
 
-            // Saving for future use
-            // if (cStation != null)
-            // {
-            //     if (track == null) return null;
+                TelexMessage[] telexMessages = getAllTelexMessages() ?? Array.Empty<TelexMessage>();
+                CPDLCMessage[] CPDLCMessages = getAllCPDLCMessages() ?? Array.Empty<CPDLCMessage>();
 
-            //     object s = track.SourceData;
-            //     if (s.ToString().Contains("[") || s.ToString().Contains("]"))
-            //     {
-            //         // dont set if already set
-            //     }
-            //     else
-            //     {
-            //         // clone the fdr
-            //         FDR f = ObjectUtils.CloneObject(flightDataRecord);
-
-            //         var callsignProperty = typeof(FDR).GetProperty("Callsign");
-            //         if (callsignProperty != null && callsignProperty.CanWrite)
-            //         {   // update the callsign
-            //             var originalCallsign = (string)callsignProperty.GetValue(flightDataRecord);
-            //             callsignProperty.SetValue(f, $"[{originalCallsign}]");
-            //         }
-            //         RDP.RadarTrack tck = s as RDP.RadarTrack;
-            //         tck.CoupledFDR = f;
-            //         if (tck != null)
-            //         {
-            //             track.UpdateTrack(tck, track.Type);
-            //         }
-            //         else
-            //         {
-            //             //do nothing
-
-            //         }
-            //     }
-            // }
-            // else
-            // { // reset to old fdr if not connected anymore.
-            //     Station nStation = stations.FirstOrDefault(station => 
-            //         station.Callsign == flightDataRecord.Callsign
-            //             .Replace("[", string.Empty)
-            //             .Replace("]", string.Empty)
-            //             .Trim());
-            //     if (nStation == null) 
-            //     {
-            //         RDP.RadarTrack tck = track.SourceData as RDP.RadarTrack;
-            //         FDR fdr = GetFDRs.FirstOrDefault(f => f.Callsign == flightDataRecord.Callsign
-            //             .Replace("[", string.Empty)
-            //             .Replace("]", string.Empty)
-            //             .Trim());
-            //         flightDataRecord.CancellationTime = DateTime.UtcNow.AddSeconds(10);
-            //         tck.CoupledFDR = fdr;
-            //         track.UpdateTrack(tck, track.Type);
-            //     }
-            // }if (cStation == null)
-
-                TelexMessage[] telexMessages = getAllTelexMessages();
-                CPDLCMessage[] CPDLCMessages = getAllCPDLCMessages();
-                IMessageData telexDownlink;
-                IMessageData combinedDownlink;
-
-                telexDownlink = telexMessages.Cast<IMessageData>().FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
-                combinedDownlink = telexMessages.Cast<IMessageData>().Concat(CPDLCMessages.Cast<IMessageData>()).FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
+                IMessageData telexDownlink = telexMessages.Cast<IMessageData>().FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
+                IMessageData combinedDownlink = telexMessages.Cast<IMessageData>().Concat(CPDLCMessages.Cast<IMessageData>()).FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
 
                 switch (itemType)
                 {
+                    case "LABEL_ITEM_ACARS_ACID" :
+                        if (cStation == null)
+                        {
+                            return new CustomLabelItem()
+                            {
+                                Text = $"{flightDataRecord.Callsign}",
+                            };
+                        } else
+                        {
+                            return new CustomLabelItem()
+                            {
+                                // set text the callsign with [ ] around it
+                                Text = $"[{flightDataRecord.Callsign}]",
+                                ForeColourIdentity = Colours.Identities.Warning
+                            };
+                        }
                     case "LABEL_ITEM_CPDLCGROUND":
                         if (telexDownlink == null) return null;
 
@@ -201,8 +161,9 @@ namespace vatACARS
                         return null;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                logger.Log($"Error in GetCustomLabelItem: {e.Message}");
                 return null;
             }
         }
@@ -430,6 +391,8 @@ namespace vatACARS
                 historyWindowMenu.Item.Click += HistoryWindowMenu_Click;
                 MMI.AddCustomMenuItem(historyWindowMenu);
 
+                ErrorHandler.Initialize(SynchronizationContext.Current); // Init error handler on ui thread
+
                 DebugNames.Add("Joshua H");
                 DebugNames.Add("Edward M");
                 DebugNames.Add("Jamie K");
@@ -452,7 +415,6 @@ namespace vatACARS
                 JSONReader.MakeQuickFillItems();
                 LabelsXMLPatcher.Patch();
 
-                ErrorHandler.Initialize(SynchronizationContext.Current); // Init error handler on ui thread
 
                 _ = Task.Run(() => CrashChecker.CheckForCrashes());
 
