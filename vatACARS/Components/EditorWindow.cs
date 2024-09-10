@@ -785,13 +785,9 @@ namespace vatACARS.Components
                             {
                                 item.UserValue = Regex.Replace(setting, @"(?:_[\d]+_|[^\d\.])", string.Empty);
                             }
-                            else if (placesub == "FREE TEXT")
-                            {
-                                item.UserValue = setting;
-                            }
                             else
                             {
-                                item.UserValue = Regex.Replace(setting, @"\s", string.Empty);
+                                item.UserValue = setting;
                             }
                             currentresponselabel.Refresh();
                         };
