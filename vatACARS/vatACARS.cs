@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -83,80 +84,191 @@ namespace vatACARS
 
                 TelexMessage[] telexMessages = getAllTelexMessages() ?? Array.Empty<TelexMessage>();
                 CPDLCMessage[] CPDLCMessages = getAllCPDLCMessages() ?? Array.Empty<CPDLCMessage>();
+                RadioMessage[] radioRequests = GetRadioReq(flightDataRecord);
 
                 IMessageData telexDownlink = telexMessages.Cast<IMessageData>().FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
                 IMessageData combinedDownlink = telexMessages.Cast<IMessageData>().Concat(CPDLCMessages.Cast<IMessageData>()).FirstOrDefault(message => message.State == 0 && message.Station == flightDataRecord.Callsign);
 
                 switch (itemType)
                 {
-                    case "LABEL_ITEM_ACARS_ACID" :
+
+                    case "LABEL_ITEM_ACARS_ACID":
                         if (cStation == null)
                         {
                             return new CustomLabelItem()
                             {
                                 Text = $"{flightDataRecord.Callsign}",
                             };
-                        } else
+                        } 
+                        else
                         {
                             return new CustomLabelItem()
                             {
-                                // set text the callsign with [ ] around it
-                                Text = $"[{flightDataRecord.Callsign}]",
-                                ForeColourIdentity = Colours.Identities.Warning
+                                Text = $"[{flightDataRecord.Callsign}]"
                             };
                         }
-                    case "LABEL_ITEM_CPDLCGROUND":
-                        if (telexDownlink == null) return null;
-
-                        if (telexDownlink.Content.StartsWith("REQUEST PREDEP CLEARANCE")) return new CustomLabelItem()
+                    case "LABEL_ITEM_ACARS_CPDLC":
+                        if (cStation == null)
                         {
-                            Text = "@ PDC",
-                            ForeColourIdentity = Colours.Identities.CPDLCDownlink,
-                            OnMouseClick = PDCLabelClick
-                        };
-                        return new CustomLabelItem()
-                        {
-                            Text = "@ REQ",
-                            ForeColourIdentity = Colours.Identities.CPDLCDownlink,
-                            OnMouseClick = CPDLCLabelClick
-                        };
-
-                    case "LABEL_ITEM_CPDLCAIR":
-                        if (cStation == null) return null;
-                        if (!MMI.IsMySectorConcerned(flightDataRecord)) return new CustomLabelItem()
-                        {
-                            Text = "@ HANDOVER",
-                            ForeColourIdentity = Colours.Identities.Warning,
-                            Border = BorderFlags.Bottom,
-                            BorderColourIdentity = Colours.Identities.Warning,
-                            OnMouseClick = HandoffLabelClick
-                        };
-
-                        int level = flightDataRecord.CoupledTrack.ActualAircraft.TrueAltitude;
-                        if (level < 24500)
-                        {
-                            return new CustomLabelItem()
+                            if (flightDataRecord.ReceiveOnly)
                             {
-                                Text = "@ TOO LOW",
+                                return new CustomLabelItem()
+                                {
+                                    Text = "-",
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            if (radioRequests.Length != 0)
+                                                MMI.OpenCPDLCMenu(((IEnumerable<RadioMessage>)radioRequests).Last<RadioMessage>());
+                                            else
+                                                MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                    }
+                                };
+                            }
+                            else if (flightDataRecord.TextOnly)
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = "+",
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            if (radioRequests.Length != 0)
+                                                MMI.OpenCPDLCMenu(((IEnumerable<RadioMessage>)radioRequests).Last<RadioMessage>());
+                                            else
+                                                MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                    }
+                                };
+                            }
+                            else if (vatsys.Network.GetRadioMessages.Any<RadioMessage>((Func<RadioMessage, bool>)(r => r.Address == flightDataRecord.Callsign && r.Request && !r.History)))
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = "*",
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            if (radioRequests.Length != 0)
+                                                MMI.OpenCPDLCMenu(((IEnumerable<RadioMessage>)radioRequests).Last<RadioMessage>());
+                                            else
+                                                MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                    }
+                                };
+                            }
+                            else
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = " ",
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            if (radioRequests.Length != 0)
+                                                MMI.OpenCPDLCMenu(((IEnumerable<RadioMessage>)radioRequests).Last<RadioMessage>());
+                                            else
+                                                MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            MMI.OpenCPDLCWindow(flightDataRecord);
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                        else
+                        {
+                            int level = flightDataRecord.CoupledTrack.ActualAircraft.TrueAltitude;
+
+                            if (combinedDownlink != null) return new CustomLabelItem()
+                            {
+                                Text = "@",
+                                ForeColourIdentity = Colours.Identities.CPDLCDownlink,
+                                OnMouseClick = (e) =>
+                                {
+                                    if (e.Button == CustomLabelItemMouseButton.Left)
+                                    {
+                                        CPDLCLabelClick(e);
+                                    }
+                                    else if (e.Button == CustomLabelItemMouseButton.Right)
+                                    {
+                                        CPDLCLabelClick(e);
+                                    }
+                                }
+                            };
+                            else if (!MMI.IsMySectorConcerned(flightDataRecord)) return new CustomLabelItem()
+                            {
+                                Text = "@",
                                 ForeColourIdentity = Colours.Identities.Warning,
-                                OnMouseClick = HandoffLabelClick
+                                OnMouseClick = (e) =>
+                                {
+                                    if (e.Button == CustomLabelItemMouseButton.Left)
+                                    {
+                                        HandoffLabelClick(e);
+                                    }
+                                    else if (e.Button == CustomLabelItemMouseButton.Right)
+                                    {
+                                        HandoffLabelClick(e);
+                                    }
+                                }
                             };
+                            else if (level < 24500)
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = "@",
+                                    ForeColourIdentity = Colours.Identities.Warning,
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            HandoffLabelClick(e);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            HandoffLabelClick(e);
+                                        }
+                                    }
+                                };
+                            }
+                            else
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = "@",
+                                    OnMouseClick = (e) =>
+                                    {
+                                        if (e.Button == CustomLabelItemMouseButton.Left)
+                                        {
+                                            CPDLCLabelClick(e);
+                                        }
+                                        else if (e.Button == CustomLabelItemMouseButton.Right)
+                                        {
+                                            CPDLCLabelClick(e);
+                                        }
+                                    }
+                                };
+                            }
                         }
-
-                        if (combinedDownlink != null) return new CustomLabelItem()
-                        {
-                            Text = "@ REQ",
-                            ForeColourIdentity = Colours.Identities.CPDLCDownlink,
-                            OnMouseClick = CPDLCLabelClick
-                        };
-
-                        return new CustomLabelItem()
-                        {
-                            Text = "@",
-                            ForeColourIdentity = Colours.Identities.StaticTools,
-                            OnMouseClick = CPDLCLabelClick
-                        };
-
                     default:
                         return null;
                 }
@@ -166,6 +278,10 @@ namespace vatACARS
                 logger.Log($"Error in GetCustomLabelItem: {e.Message}");
                 return null;
             }
+        }
+        public RadioMessage[] GetRadioReq(FDR fdr)
+        {
+            return vatsys.Network.GetRadioMessages.Where<RadioMessage>((Func<RadioMessage, bool>)(r => r.Address == fdr.Callsign && r.Request && !r.Acknowledged)).ToArray<RadioMessage>();
         }
 
         public void OnFDRUpdate(FDP2.FDR updated)
@@ -272,9 +388,20 @@ namespace vatACARS
         private static void DoShowPopupWindow(string c, FDR fdr)
         {
             string formattedCFLString = (fdr.CFLString != null && int.Parse(fdr.CFLString) < 110
-                ? "A"
-                : "FL") + fdr.CFLString.PadLeft(3, '0');
-            c = $"Do you want to send a CPDLC message to {fdr.Callsign} to clear their flight level to {formattedCFLString}?";
+            ? "A"
+            : "FL") + fdr.CFLString.PadLeft(3, '0');
+            if (c.Equals("CFLUP"))
+            {
+                c = $"Do you want to send a CPDLC message to {fdr.Callsign} to clear their flight level to {formattedCFLString}?+";
+            }
+            else if (c.Equals("CFLDOWN"))
+            {
+                c = $"Do you want to send a CPDLC message to {fdr.Callsign} to clear their flight level to {formattedCFLString}?-";
+            }
+            else
+            {
+                c = $"Do you want to send a CPDLC message to {fdr.Callsign} to clear their flight level to {formattedCFLString}?";
+            }
 
             PopupWindow newPopupWindow = new PopupWindow(c.Trim(), false, fdr);
             Form form = Form.ActiveForm;
@@ -435,9 +562,28 @@ namespace vatACARS
                 {
                     lastCFLString = string.Empty;
                 }
-
+                string upordown = "CFL";
                 if (fdr.CFLString != lastCFLString)
                 {
+                    if (float.TryParse(lastCFLString, out float lastCFL) && float.TryParse(fdr.CFLString, out float currentCFL))
+                    {
+                        if (currentCFL > lastCFL)
+                        {
+                            upordown = "CFLUP";
+                        }
+                        else if (currentCFL < lastCFL)
+                        {
+                            upordown = "CFLDOWN";
+                        }
+                        else
+                        { 
+
+                        }
+                    }
+                    else
+                    {
+                        logger.Log($"Station: {fdr.Callsign} CFL could not be compared. Invalid CFL values.");
+                    }
                     lastCFLStrings[fdr] = fdr.CFLString;
                     Station station = getAllStations().FirstOrDefault(Station => Station.Callsign == fdr.Callsign);
                     if (station != null)
@@ -448,7 +594,7 @@ namespace vatACARS
                         if (!recentLevelMessages.Any())
                         {
                             logger.Log($"Station: {station.Callsign} Updated there CFL with no expectation.");
-                            DoShowPopupWindow("CFL", fdr);
+                            DoShowPopupWindow(upordown, fdr);
                         }
                     }
                 }
