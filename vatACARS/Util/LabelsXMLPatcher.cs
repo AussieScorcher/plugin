@@ -16,20 +16,44 @@ namespace vatACARS.Util
                 XmlDocument doc = new XmlDocument();
                 doc.Load(hardcodedFilePath);
 
-                XmlNodeList acidItems = doc.SelectNodes("//Item[@Type='LABEL_ITEM_ACID']");
-                foreach (XmlElement acidItem in acidItems)
+                // Select all Label elements
+                XmlNodeList labels = doc.SelectNodes("//Label");
+                int patchedCount = 0;
+
+                foreach (XmlElement label in labels)
                 {
-                    acidItem.SetAttribute("Type", "LABEL_ITEM_ACARS_ACID");
-                    acidItem.SetAttribute("LeaderLineAnchor", "True");
+                    // Check if the label is not of type 'Limited' or 'Quicktag'
+                    if (label.GetAttribute("Type") != "Limited" && label.GetAttribute("Type") != "Quicktag")
+                    {
+                        // Select all Item elements of type 'LABEL_ITEM_ACID' in this label
+                        XmlNodeList acidItems = label.SelectNodes(".//Item[@Type='LABEL_ITEM_ACID']");
+                        foreach (XmlElement acidItem in acidItems)
+                        {
+                            acidItem.SetAttribute("Type", "LABEL_ITEM_ACARS_ACID");
+                            acidItem.SetAttribute("LeaderLineAnchor", "True");
+                            patchedCount++;
+                        }
+
+                        XmlNodeList cpdlcItems = label.SelectNodes(".//Item[@Type='LABEL_ITEM_CPDLC']");
+                        foreach (XmlElement cpdlcItem in cpdlcItems)
+                        {
+                            cpdlcItem.SetAttribute("Type", "LABEL_ITEM_ACARS_CPDLC");
+                            cpdlcItem.SetAttribute("LeftClick", "");
+                            cpdlcItem.SetAttribute("RightClick", "");
+                            cpdlcItem.SetAttribute("BackgroundColour", "");
+                            patchedCount++;
+                        }
+
+                    }
                 }
 
-                if (acidItems.Count <= 0) 
+                if (patchedCount <= 0)
                 {
-                    logger.Log("No acid items found");
+                    logger.Log("No acid items found or patched");
                 }
                 else
                 {
-                    logger.Log($"Patched {acidItems.Count} acid items");
+                    logger.Log($"Patched {patchedCount} items");
                     ErrorHandler.GetInstance().AddError("vatACARS has updated Labels.xml. Please restart vatSys.");
                 }
 
