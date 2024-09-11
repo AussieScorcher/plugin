@@ -45,6 +45,7 @@ namespace vatACARS.Components
         private int responseIndex = 0;
         private List<TextLabel> responselabels = new List<TextLabel>();
         private List<GenericButton> scrollerButtons = new List<GenericButton>();
+        private string currentGroup = "";
 
         public EditorWindow(string initialEntryId = null)
         {
@@ -884,8 +885,14 @@ namespace vatACARS.Components
         {
             if (lvw_messageSelector.SelectedItems.Count > 0)
             {
-                UplinkEntry selected = (UplinkEntry)XMLReader.uplinks.Entries.Where(entry => entry.Element == lvw_messageSelector.SelectedItems[0].Text).ToList().FirstOrDefault().Clone();
+                UplinkEntry selected = (UplinkEntry)XMLReader.uplinks.Entries.Where(entry => entry.Element == lvw_messageSelector.SelectedItems[0].Text).ToList().FirstOrDefault()?.Clone();
+                if (selected != null)
                 HandleResponse(selected);
+                else
+                {
+                    ShowGroup(currentGroup);
+                    logger.Log("Selected item is null refreshing");
+                }
             }
 
             lvw_messageSelector.SelectedItems.Clear();
@@ -951,6 +958,7 @@ namespace vatACARS.Components
             {
                 lvw_messageSelector.Items.Add(uplink.Element);
             }
+            currentGroup = group_id;
         }
 
         private void ShowGroupBasedOnMessageContent(string content)

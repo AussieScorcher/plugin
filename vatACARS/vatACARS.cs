@@ -102,10 +102,20 @@ namespace vatACARS
                         } 
                         else
                         {
-                            return new CustomLabelItem()
+                            if (Properties.Settings.Default.p_callsignbracket)
                             {
-                                Text = $"[{flightDataRecord.Callsign}]"
-                            };
+                                return new CustomLabelItem()
+                                {
+                                    Text = $"[{flightDataRecord.Callsign}]"
+                                };
+                            }
+                            else
+                            {
+                                return new CustomLabelItem()
+                                {
+                                    Text = $"{flightDataRecord.Callsign}"
+                                };
+                            }
                         }
                     case "LABEL_ITEM_ACARS_CPDLC":
                         if (cStation == null)
@@ -537,12 +547,10 @@ namespace vatACARS
                 // Update Checking
                 logger.Log("Starting version checker...");
                 VersionChecker.StartListening();
-
+                ProfileManager.LoadProfiles();
                 XMLReader.MakeUplinks();
                 JSONReader.MakeQuickFillItems();
                 LabelsXMLPatcher.Patch();
-                ProfileManager.LoadProfiles();
-
 
                 _ = Task.Run(() => CrashChecker.CheckForCrashes());
 

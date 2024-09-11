@@ -57,10 +57,9 @@ namespace vatACARS.Components
         {
             GenericButton profileLabel = (GenericButton)sender;
             Lib.Profile profile = (Lib.Profile)profileLabel.Tag;
+            ProfileManager.SetProfile(profile);
             logger.Log($"Selected profile: {profile.Name}");
-            ErrorHandler.GetInstance().AddError($"Selected profile: {profile.Name}");
-            ErrorHandler.GetInstance().AddError($"Restart vatSys to apply changes.");
-            //TODO: Implement profile selection
+            this.Close();
         }
 
         private void StyleComponent()

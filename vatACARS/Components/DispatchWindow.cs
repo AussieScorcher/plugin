@@ -388,33 +388,42 @@ namespace vatACARS.Components
                                 var m = (TelexMessage)msg;
                                 if (Regex.IsMatch(m.Content, @"\b(?:REQ|REQUEST)\s+(?:(?:PRE?DEPARTURE|PREDEP)?\s+CLEARANCE)\b"))
                                 {
-                                    if (PDCWindow != null)
+                                    if (Properties.Settings.Default.p_pdc)
                                     {
-                                        if (PDCWindow.Visible) return;
-                                        PDCWindow.Close();
-                                    }
-                                    SelectedMessage = msg;
-                                    PDCWindow = new PDCWindow();
-                                    if (!PDCWindow.IsDisposed)
-                                    {
-                                        PDCWindow.Show(ActiveForm);
+                                        if (PDCWindow != null)
+                                        {
+                                            if (PDCWindow.Visible) return;
+                                            PDCWindow.Close();
+                                        }
+                                        SelectedMessage = msg;
+                                        PDCWindow = new PDCWindow();
+                                        if (!PDCWindow.IsDisposed)
+                                        {
+                                            PDCWindow.Show(ActiveForm);
+                                        }
+                                        else
+                                        {
+                                            logger.Log("error showing PDC window.");
+                                        }
+                                        return;
                                     }
                                     else
                                     {
-                                        logger.Log("error showing PDC window.");
+                                        ErrorHandler.GetInstance().AddError("PDC is disabled.");
+                                        logger.Log("PDC is disabled.");
+                                        return;
                                     }
-                                    return;
                                 }
+                                ShowEditorWindow(msg);
                             }
-                            ShowEditorWindow(msg);
+                            lvw_messages.Invalidate();
                         }
-                        lvw_messages.Invalidate();
-                    }
-                    else if (e.Button == MouseButtons.Right)
-                    {
-                        bool isOpen = selected.ContextMenu.Open;
-                        foreach (ACARSListViewItem item in lvw_messages.Items) item.ContextMenu.Show(false);
-                        selected.ContextMenu.Show(!isOpen);
+                        else if (e.Button == MouseButtons.Right)
+                        {
+                            bool isOpen = selected.ContextMenu.Open;
+                            foreach (ACARSListViewItem item in lvw_messages.Items) item.ContextMenu.Show(false);
+                            selected.ContextMenu.Show(!isOpen);
+                        }
                     }
                 }
             }

@@ -369,7 +369,7 @@
             this.btn_profile.Font = new System.Drawing.Font("Terminus (TTF)", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
             this.btn_profile.Location = new System.Drawing.Point(177, 342);
             this.btn_profile.Name = "btn_profile";
-            this.btn_profile.Size = new System.Drawing.Size(85, 26);
+            this.btn_profile.Size = new System.Drawing.Size(154, 26);
             this.btn_profile.SubFont = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btn_profile.SubText = "";
             this.btn_profile.TabIndex = 38;
