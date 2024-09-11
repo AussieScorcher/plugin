@@ -202,6 +202,8 @@ namespace vatACARS.Components
             {
                 foreach (StationInformation station in OnlineStations)
                 {
+                    if (!Properties.Settings.Default.p_handoveratsus.Contains(station.Station_Code)) continue;
+                    if (Properties.Settings.Default.stationCode == station.Station_Code) continue;
                     Label btn = new Label();
                     btn.Text = station.Station_Code;
                     btn.Tag = station;

@@ -154,5 +154,98 @@ namespace vatACARS.Properties {
                 this["SetupStart"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public bool p_callsignbracket {
+            get {
+                return ((bool)(this["p_callsignbracket"]));
+            }
+            set {
+                this["p_callsignbracket"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public bool p_pdc {
+            get {
+                return ((bool)(this["p_pdc"]));
+            }
+            set {
+                this["p_pdc"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public bool p_autologon {
+            get {
+                return ((bool)(this["p_autologon"]));
+            }
+            set {
+                this["p_autologon"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string p_handoveratsus {
+            get {
+                return ((string)(this["p_handoveratsus"]));
+            }
+            set {
+                this["p_handoveratsus"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string p_uplinkfile {
+            get {
+                return ((string)(this["p_uplinkfile"]));
+            }
+            set {
+                this["p_uplinkfile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string p_loadedprofile {
+            get {
+                return ((string)(this["p_loadedprofile"]));
+            }
+            set {
+                this["p_loadedprofile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string p_configfile {
+            get {
+                return ((string)(this["p_configfile"]));
+            }
+            set {
+                this["p_configfile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int p_autologonlevel {
+            get {
+                return ((int)(this["p_autologonlevel"]));
+            }
+            set {
+                this["p_autologonlevel"] = value;
+            }
+        }
     }
 }

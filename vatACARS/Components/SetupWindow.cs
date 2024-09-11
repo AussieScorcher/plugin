@@ -7,8 +7,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using vatACARS.Components;
 using vatACARS.Util;
 using vatsys;
+using vatACARS.Lib;
 using static vatACARS.Helpers.Transceiver;
 
 namespace vatACARS
@@ -19,6 +21,7 @@ namespace vatACARS
 
         private static bool Hoppies = Properties.Settings.Default.enableHoppies;
         private static bool sendReports = Properties.Settings.Default.sendReports;
+        private static ProfileSelector profileSelector;
         private Logger logger = new Logger("Setup Window");
 
         public SetupWindow()
@@ -27,6 +30,20 @@ namespace vatACARS
             StyleComponent();
             this.Text = ($"vatACARS Setup v{AppData.CurrentVersion}");
             Properties.Settings.Default.PropertyChanged += Default_PropertyChanged;
+        }
+
+        private static void DoShowProfileSelector()
+        {
+            if (profileSelector == null || profileSelector.IsDisposed)
+            {
+                profileSelector = new ProfileSelector();
+            }
+            else if (profileSelector.Visible)
+            {
+                return;
+            }
+
+            profileSelector.Show(Form.ActiveForm);
         }
 
         public static void SetHoppies(bool value)
@@ -424,6 +441,17 @@ namespace vatACARS
             tbx_messageTimeout.Text = Properties.Settings.Default.finishedMessageTimeout.ToString();
             sld_auralAlertVolume.Value = Properties.Settings.Default.auralAlertVolume;
 
+            if (Properties.Settings.Default.p_loadedprofile != null)
+            {
+                btn_profile.Text = Properties.Settings.Default.p_loadedprofile;
+                btn_profile.Enabled = true;
+            }
+            else
+            {
+                btn_profile.Text = "None Found.";
+                btn_profile.Enabled = false;
+            }
+
             btn_enableHoppies.Text = Properties.Settings.Default.enableHoppies ? "\u2713" : "";
             btn_enableHoppies.Invalidate();
             btn_sendreports.Text = Properties.Settings.Default.sendReports ? "\u2713" : "";
@@ -501,6 +529,15 @@ namespace vatACARS
             {
                 this.Location = Properties.Settings.Default.SetupStart;
             }
+            ProfileManager.ProfileSet += ProfileManager_ProfileSet;
+        }
+        private void ProfileManager_ProfileSet(object sender, EventArgs e)
+        {
+            btn_profile.Text = Properties.Settings.Default.p_loadedprofile;
+        }
+        private void btn_profile_Click(object sender, EventArgs e)
+        {
+            DoShowProfileSelector();
         }
     }
 }
