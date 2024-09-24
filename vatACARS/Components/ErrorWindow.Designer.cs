@@ -75,7 +75,7 @@ namespace vatACARS.Components
             this.MiddleClickClose = false;
             this.MinimumSize = new System.Drawing.Size(450, 250);
             this.Name = "ErrorWindow";
-            this.Text = "VatACARS Error Window";
+            this.Text = "vatACARS Error Window";
             this.TopMost = true;
             this.insetPanel2.ResumeLayout(false);
             this.ResumeLayout(false);

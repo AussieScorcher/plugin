@@ -50,6 +50,8 @@
             this.btn_backup = new vatsys.GenericButton();
             this.lbl_backup = new vatsys.TextLabel();
             this.btn_restore = new vatsys.GenericButton();
+            this.lbl_profile = new vatsys.TextLabel();
+            this.btn_profile = new vatsys.GenericButton();
             ((System.ComponentModel.ISupportInitialize)(this.sld_auralAlertVolume)).BeginInit();
             this.SuspendLayout();
             // 
@@ -57,7 +59,7 @@
             // 
             this.btn_connect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btn_connect.Font = new System.Drawing.Font("Terminus (TTF)", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
-            this.btn_connect.Location = new System.Drawing.Point(314, 376);
+            this.btn_connect.Location = new System.Drawing.Point(314, 423);
             this.btn_connect.Name = "btn_connect";
             this.btn_connect.Size = new System.Drawing.Size(101, 28);
             this.btn_connect.SubFont = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -114,7 +116,7 @@
             this.tbx_hoppiesLogonCode.BackColor = System.Drawing.SystemColors.ControlDark;
             this.tbx_hoppiesLogonCode.Font = new System.Drawing.Font("Terminus (TTF)", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
             this.tbx_hoppiesLogonCode.ForeColor = System.Drawing.SystemColors.ControlDark;
-            this.tbx_hoppiesLogonCode.Location = new System.Drawing.Point(177, 143);
+            this.tbx_hoppiesLogonCode.Location = new System.Drawing.Point(177, 141);
             this.tbx_hoppiesLogonCode.Name = "tbx_hoppiesLogonCode";
             this.tbx_hoppiesLogonCode.NumericCharOnly = false;
             this.tbx_hoppiesLogonCode.OctalOnly = false;
@@ -276,7 +278,7 @@
             this.lbl_statusMessage.ForeColor = System.Drawing.SystemColors.ControlDark;
             this.lbl_statusMessage.HasBorder = false;
             this.lbl_statusMessage.InteractiveText = true;
-            this.lbl_statusMessage.Location = new System.Drawing.Point(12, 347);
+            this.lbl_statusMessage.Location = new System.Drawing.Point(12, 394);
             this.lbl_statusMessage.Name = "lbl_statusMessage";
             this.lbl_statusMessage.Size = new System.Drawing.Size(287, 57);
             this.lbl_statusMessage.TabIndex = 31;
@@ -348,11 +350,40 @@
             this.btn_restore.UseVisualStyleBackColor = true;
             this.btn_restore.Click += new System.EventHandler(this.btn_restore_Click);
             // 
+            // lbl_profile
+            // 
+            this.lbl_profile.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.lbl_profile.Font = new System.Drawing.Font("Terminus (TTF)", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
+            this.lbl_profile.ForeColor = System.Drawing.SystemColors.ControlDark;
+            this.lbl_profile.HasBorder = false;
+            this.lbl_profile.InteractiveText = true;
+            this.lbl_profile.Location = new System.Drawing.Point(12, 342);
+            this.lbl_profile.Name = "lbl_profile";
+            this.lbl_profile.Size = new System.Drawing.Size(159, 26);
+            this.lbl_profile.TabIndex = 37;
+            this.lbl_profile.Text = "PROFILE";
+            this.lbl_profile.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btn_profile
+            // 
+            this.btn_profile.Font = new System.Drawing.Font("Terminus (TTF)", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
+            this.btn_profile.Location = new System.Drawing.Point(177, 342);
+            this.btn_profile.Name = "btn_profile";
+            this.btn_profile.Size = new System.Drawing.Size(154, 26);
+            this.btn_profile.SubFont = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btn_profile.SubText = "";
+            this.btn_profile.TabIndex = 38;
+            this.btn_profile.Text = "Default";
+            this.btn_profile.UseVisualStyleBackColor = true;
+            this.btn_profile.Click += new System.EventHandler(this.btn_profile_Click);
+            // 
             // SetupWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(427, 416);
+            this.ClientSize = new System.Drawing.Size(427, 463);
+            this.Controls.Add(this.btn_profile);
+            this.Controls.Add(this.lbl_profile);
             this.Controls.Add(this.btn_restore);
             this.Controls.Add(this.lbl_backup);
             this.Controls.Add(this.btn_backup);
@@ -419,5 +450,7 @@
         private vatsys.GenericButton btn_backup;
         private vatsys.TextLabel lbl_backup;
         private vatsys.GenericButton btn_restore;
+        private vatsys.TextLabel lbl_profile;
+        private vatsys.GenericButton btn_profile;
     }
 }

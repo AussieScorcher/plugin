@@ -11,8 +11,10 @@ namespace vatACARS.Components
     {
         private string Content;
         private bool Direct = false;
+        private bool down = false;
         private ErrorHandler errorHandler = ErrorHandler.GetInstance();
         private FDR FDR;
+        private bool up = false;
 
         public PopupWindow(string content, bool direct, FDR fdr)
         {
@@ -28,6 +30,20 @@ namespace vatACARS.Components
             }
             else
             {
+                if (content.EndsWith("+"))
+                {
+                    up = true;
+                    content = content.Substring(0, content.Length - 1);
+                }
+                else if (content.EndsWith("-"))
+                {
+                    down = true;
+                    content = content.Substring(0, content.Length - 1);
+                }
+                else
+                {
+                }
+                Content = content;
                 ShowPopup(content);
             }
         }
@@ -57,7 +73,20 @@ namespace vatACARS.Components
                     };
 
                     DispatchWindow.SelectedMessage = msg;
-                    DispatchWindow.ShowEditorWindow(msg);
+
+                    if (up)
+                    {
+                        DispatchWindow.ShowEditorWindow(msg, "20");
+                    }
+                    else if (down)
+                    {
+                        DispatchWindow.ShowEditorWindow(msg, "23");
+                    }
+                    else
+                    {
+                        DispatchWindow.ShowEditorWindow(msg);
+                    }
+
                     this.Hide();
 
                     Timer timer = new Timer(); // This is not the best way to do this.

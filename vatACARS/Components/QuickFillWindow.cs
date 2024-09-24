@@ -157,7 +157,7 @@ namespace vatACARS.Components
         {
             List<string> freqs = new List<string>();
 
-            AddQuickFillItem("UNICOM 122.8");
+            AddQuickFillItem("UNICOM 122.800");
 
             foreach (VSCSFrequency vscsFrequency in (IEnumerable<VSCSFrequency>)Audio.VSCSFrequencies)
             {

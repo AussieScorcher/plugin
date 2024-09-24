@@ -6,6 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using vatACARS.Components;
@@ -50,40 +52,66 @@ namespace vatACARS.Helpers
         {
             try
             {
-                AudioInterface.playSound("incomingMessage");
-
-                if (message.Content == "LOGOFF") getAllStations().FirstOrDefault(station => station.Callsign == message.Station).removeStation();
-
-                if (message.ReplyMessageId != -1 && ClosingMessages.Contains(message.Content))
+                FDR fdr = GetFDRs.FirstOrDefault(f => f.Callsign == message.Station);
+                if (Properties.Settings.Default.p_autologon && fdr != null && message.Content.StartsWith("REQUEST LOGON")) 
                 {
-                    SentCPDLCMessage sentCPDLCMessage = SentCPDLCMessages.FirstOrDefault(msg => msg.MessageId == message.ReplyMessageId);
-                    CPDLCMessage originalMessage = null;
-                    if (sentCPDLCMessage != null) originalMessage = CPDLCMessages.FirstOrDefault(msg => msg.MessageId == sentCPDLCMessage.ReplyMessageId);
-
-                    if (originalMessage == null) CPDLCMessages.Add(message);
+                    int level = fdr.CoupledTrack.ActualAircraft.TrueAltitude;
+                    if (level > Properties.Settings.Default.p_autologonlevel && MMI.IsMySectorConcerned(fdr))
+                    {
+                        message.Content = "LOGON ACCEPTED";
+                        message.setMessageState(MessageState.Finished);
+                        addStation(new Station()
+                        {
+                            Provider = 0,
+                            Callsign = message.Station
+                        });
+                        FormUrlEncodedContent req = HoppiesInterface.ConstructMessage(message.Station, "CPDLC", $"/data2/{SentMessages}/{message.MessageId}/N/LOGON ACCEPTED");
+                        _ = HoppiesInterface.SendMessage(req);
+                    }
                     else
                     {
-                        FDR fdr = GetFDRs.FirstOrDefault(f => f.Callsign == message.Station);
-                        if (fdr != null && originalMessage.Content.Contains("PDC")) fdr.PDCAcknowledged = true;
-                        if (AgreeMessages.Contains(message.Content)) useMessageIntent(sentCPDLCMessage);
-                        SentCPDLCMessages.Remove(sentCPDLCMessage);
-                        originalMessage.Response = message.Content;
-                        if (message.Content != "STANDBY") originalMessage.setMessageState(MessageState.Finished);
+                        message.Content = "SERVICE UNAVAILABLE";
+                        message.setMessageState(MessageState.Finished);
+                        FormUrlEncodedContent req = HoppiesInterface.ConstructMessage(message.Station, "CPDLC", $"/data2/{SentMessages}/{message.MessageId}/N/SERVICE UNAVAILABLE");
+                        _ = HoppiesInterface.SendMessage(req);
                     }
                 }
-                else
+                else 
                 {
-                    CPDLCMessages.Add(message);
-                    Station station = Stations.FirstOrDefault(s => s.Callsign == message.Station);
-                    if (station != null) // cpdlc may not have come from connected station (PDC's)
+                    AudioInterface.playSound("incomingMessage");
+
+                    if (message.Content == "LOGOFF") getAllStations().FirstOrDefault(station => station.Callsign == message.Station).removeStation();
+
+                    if (message.ReplyMessageId != -1 && ClosingMessages.Contains(message.Content))
                     {
-                        station.History.Add(message);
+                        SentCPDLCMessage sentCPDLCMessage = SentCPDLCMessages.FirstOrDefault(msg => msg.MessageId == message.ReplyMessageId);
+                        CPDLCMessage originalMessage = null;
+                        if (sentCPDLCMessage != null) originalMessage = CPDLCMessages.FirstOrDefault(msg => msg.MessageId == sentCPDLCMessage.ReplyMessageId);
+
+                        if (originalMessage == null) CPDLCMessages.Add(message);
+                        else
+                        {
+                            if (fdr != null && originalMessage.Content.Contains("PDC")) fdr.PDCAcknowledged = true;
+                            if (AgreeMessages.Contains(message.Content)) useMessageIntent(sentCPDLCMessage);
+                            SentCPDLCMessages.Remove(sentCPDLCMessage);
+                            originalMessage.Response = message.Content;
+                            if (message.Content != "STANDBY") originalMessage.setMessageState(MessageState.Finished);
+                        }
                     }
                     else
                     {
-                        logger.Log($"Station {message.Station} is not connected.");
+                        CPDLCMessages.Add(message);
+                        Station station = Stations.FirstOrDefault(s => s.Callsign == message.Station);
+                        if (station != null) // cpdlc may not have come from connected station (PDC's)
+                        {
+                            station.History.Add(message);
+                        }
+                        else
+                        {
+                            logger.Log($"Station {message.Station} is not connected.");
+                        }
+                        if (message.ResponseType == "N") message.setMessageState(MessageState.DownlinkResponseNotRequired);
                     }
-                    if (message.ResponseType == "N") message.setMessageState(MessageState.DownlinkResponseNotRequired);
                 }
             }
             catch (Exception ex)
@@ -116,16 +144,27 @@ namespace vatACARS.Helpers
 
         public static void addTelexMessage(TelexMessage message)
         {
-            AudioInterface.playSound("incomingMessage");
-            TelexMessages.Add(message);
-            Station station = Stations.FirstOrDefault(s => s.Callsign == message.Station);
-            if (station != null) // telex may not have come from connected station.
+            if (Regex.IsMatch(message.Content, @"\b(?:REQ|REQUEST)\s+(?:(?:PRE?DEPARTURE|PREDEP)?\s+CLEARANCE)\b") && !Properties.Settings.Default.p_pdc) 
             {
-                station.History.Add(message);
+                logger.Log("PDC is disabled. Ignoring PDC request.");
+                FormUrlEncodedContent req = HoppiesInterface.ConstructMessage(message.Station, "telex", $"UNABLE");
+                _ = HoppiesInterface.SendMessage(req);
+                message.setMessageState(MessageState.Finished);
+                return;
             }
             else
             {
-                logger.Log($"Station {message.Station} is not connected.");
+                AudioInterface.playSound("incomingMessage");
+                TelexMessages.Add(message);
+                Station station = Stations.FirstOrDefault(s => s.Callsign == message.Station);
+                if (station != null) // telex may not have come from connected station.
+                {
+                    station.History.Add(message);
+                }
+                else
+                {
+                    logger.Log($"Station {message.Station} is not connected.");
+                }
             }
             TelexMessageReceived?.Invoke(null, message);
         }

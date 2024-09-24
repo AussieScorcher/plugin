@@ -44,7 +44,7 @@ namespace vatACARS.Components
             UpdateMessages();
         }
 
-        public static void ShowEditorWindow(IMessageData msg)
+        public static void ShowEditorWindow(IMessageData msg, string entry = null)
         {
             foreach (Form form in Application.OpenForms)
             {
@@ -61,7 +61,7 @@ namespace vatACARS.Components
                     }
                 }
             }
-            EditorWindow window = new EditorWindow();
+            EditorWindow window = new EditorWindow(entry);
             window.selectedMsg = msg;
             window.Show(ActiveForm);
         }
@@ -267,6 +267,20 @@ namespace vatACARS.Components
             tbl_connected.Controls.Add(callsignLabel);
         }
 
+        private void DispatchWindow_Load(object sender, EventArgs e)
+        {
+            if (Properties.Settings.Default.DispatchStart != null)
+            {
+                this.Location = Properties.Settings.Default.DispatchStart;
+            }
+        }
+
+        private void DispatchWindow_LocationChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.DispatchStart = this.Location;
+            Properties.Settings.Default.Save();
+        }
+
         private void DispatchWindow_ResizeBegin(object sender, EventArgs e)
         {
             tbl_connected.SuspendLayout();
@@ -374,33 +388,42 @@ namespace vatACARS.Components
                                 var m = (TelexMessage)msg;
                                 if (Regex.IsMatch(m.Content, @"\b(?:REQ|REQUEST)\s+(?:(?:PRE?DEPARTURE|PREDEP)?\s+CLEARANCE)\b"))
                                 {
-                                    if (PDCWindow != null)
+                                    if (Properties.Settings.Default.p_pdc)
                                     {
-                                        if (PDCWindow.Visible) return;
-                                        PDCWindow.Close();
-                                    }
-                                    SelectedMessage = msg;
-                                    PDCWindow = new PDCWindow();
-                                    if (!PDCWindow.IsDisposed)
-                                    {
-                                        PDCWindow.Show(ActiveForm);
+                                        if (PDCWindow != null)
+                                        {
+                                            if (PDCWindow.Visible) return;
+                                            PDCWindow.Close();
+                                        }
+                                        SelectedMessage = msg;
+                                        PDCWindow = new PDCWindow();
+                                        if (!PDCWindow.IsDisposed)
+                                        {
+                                            PDCWindow.Show(ActiveForm);
+                                        }
+                                        else
+                                        {
+                                            logger.Log("error showing PDC window.");
+                                        }
+                                        return;
                                     }
                                     else
                                     {
-                                        logger.Log("error showing PDC window.");
+                                        ErrorHandler.GetInstance().AddError("PDC is disabled.");
+                                        logger.Log("PDC is disabled.");
+                                        return;
                                     }
-                                    return;
                                 }
+                                ShowEditorWindow(msg);
                             }
-                            ShowEditorWindow(msg);
+                            lvw_messages.Invalidate();
                         }
-                        lvw_messages.Invalidate();
-                    }
-                    else if (e.Button == MouseButtons.Right)
-                    {
-                        bool isOpen = selected.ContextMenu.Open;
-                        foreach (ACARSListViewItem item in lvw_messages.Items) item.ContextMenu.Show(false);
-                        selected.ContextMenu.Show(!isOpen);
+                        else if (e.Button == MouseButtons.Right)
+                        {
+                            bool isOpen = selected.ContextMenu.Open;
+                            foreach (ACARSListViewItem item in lvw_messages.Items) item.ContextMenu.Show(false);
+                            selected.ContextMenu.Show(!isOpen);
+                        }
                     }
                 }
             }
@@ -560,21 +583,6 @@ namespace vatACARS.Components
                 return;
             }
             UpdateMessages();
-        }
-
-        private void DispatchWindow_LocationChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.DispatchStart = this.Location;
-            Properties.Settings.Default.Save();
-        }
-
-
-        private void DispatchWindow_Load(object sender, EventArgs e)
-        {
-            if (Properties.Settings.Default.DispatchStart != null)
-            {
-                this.Location = Properties.Settings.Default.DispatchStart;
-            }
         }
     }
 }

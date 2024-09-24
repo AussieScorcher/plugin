@@ -16,7 +16,17 @@ namespace vatACARS.Lib
             try
             {
                 logger.Log("Reading uplinks...");
+                // Default uplinks
                 string uplinksRaw = File.ReadAllText($"{dirPath}\\data\\uplinks.xml");
+                if (Properties.Settings.Default.p_uplinkfile == null)
+                {
+                    logger.Log("No profile loaded. Using Default Uplinks");
+                    return;
+                }
+                else
+                {
+                    uplinksRaw = File.ReadAllText(Properties.Settings.Default.p_uplinkfile);
+                }
 
                 logger.Log("Deserializing...");
                 using (TextReader reader = new StringReader(uplinksRaw))
