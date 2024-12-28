@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Program Files %28x86%29\vatSys\bin\Plugins\vatACARS\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -34,7 +34,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\OneDrive\Documents\vatSys Files\Profiles\Australia\plugins\vatACARS\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -50,6 +50,21 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpDX, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.4.2.0\lib\net45\SharpDX.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpDX.Direct2D1, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.Direct2D1.4.2.0\lib\net45\SharpDX.Direct2D1.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpDX.Direct3D11, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.Direct3D11.4.2.0\lib\net45\SharpDX.Direct3D11.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpDX.DXGI, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.DXGI.4.2.0\lib\net45\SharpDX.DXGI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
@@ -69,8 +84,35 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Entities\CPDLCMessage.cs" />
+    <Compile Include="Models\Entities\Station.cs" />
+    <Compile Include="Models\Entities\TelexMessage.cs" />
+    <Compile Include="Models\Enums\GatewayAction.cs" />
+    <Compile Include="Models\Enums\MessageState.cs" />
+    <Compile Include="Models\Enums\ResponseType.cs" />
+    <Compile Include="Models\Interfaces\IMessageData.cs" />
+    <Compile Include="Models\Interfaces\IStationManager.cs" />
+    <Compile Include="Services\Authority\VatACARSAuthority.cs" />
+    <Compile Include="Services\Communications\HoppiesInterface.cs" />
+    <Compile Include="Services\Configuration\ConfigurationService.cs" />
+    <Compile Include="Services\Logging\Logger.cs" />
+    <Compile Include="Services\Messaging\CPDLCMessageService.cs" />
+    <Compile Include="Services\Messaging\TelexMessageService.cs" />
+    <Compile Include="Services\Stations\StationManager.cs" />
+    <Compile Include="UI\vatSysHook.cs" />
+    <Compile Include="UI\vatSysHookOld.cs" />
     <Compile Include="vatACARS.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Events\Handlers\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="UI\Controls\" />
+    <Folder Include="UI\Windows\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
