@@ -84,6 +84,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\RegHelper.cs" />
+    <Compile Include="Helpers\VatSys.cs" />
     <Compile Include="Models\Entities\CPDLCMessage.cs" />
     <Compile Include="Models\Entities\Station.cs" />
     <Compile Include="Models\Entities\TelexMessage.cs" />
@@ -99,15 +101,13 @@
     <Compile Include="Services\Messaging\CPDLCMessageService.cs" />
     <Compile Include="Services\Messaging\TelexMessageService.cs" />
     <Compile Include="Services\Stations\StationManager.cs" />
-    <Compile Include="UI\vatSysHook.cs" />
-    <Compile Include="UI\vatSysHookOld.cs" />
+    <Compile Include="UI\Controls\MainASDLabel.cs" />
+    <Compile Include="UI\Controls\MainASDLabelExtensions.cs" />
     <Compile Include="vatACARS.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Events\Handlers\" />
-    <Folder Include="Helpers\" />
-    <Folder Include="UI\Controls\" />
     <Folder Include="UI\Windows\" />
   </ItemGroup>
   <ItemGroup>
