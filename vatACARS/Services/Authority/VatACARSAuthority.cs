@@ -16,7 +16,8 @@ namespace vatACARS.Services.Authority
     {
         private readonly Uri _apiUri;
         private ClientWebSocket _clientWebSocket;
-        private CancellationTokenSource _cancellationTokenSource;
+        public CancellationTokenSource _cancellationTokenSource;
+        public CancellationTokenSource _mainProcessCancellationTokenSource;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ApiResponse>> _pendingResponses;
 
@@ -28,21 +29,26 @@ namespace vatACARS.Services.Authority
             _apiUri = new Uri(apiEndpoint);
             _clientWebSocket = new ClientWebSocket();
             _pendingResponses = new ConcurrentDictionary<string, TaskCompletionSource<ApiResponse>>();
+            _cancellationTokenSource = new CancellationTokenSource();
+            
         }
 
-        public async Task ConnectAsync(string token)
+        public async Task<bool> ConnectAsync(string token)
         {
+            _cancellationTokenSource.Cancel();
             _cancellationTokenSource = new CancellationTokenSource();
+            _mainProcessCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
                 // Connect to the vatACARS gateway.
-                await _clientWebSocket.ConnectAsync(_apiUri, _cancellationTokenSource.Token);
-                _ = ListenForMessagesAsync(_cancellationTokenSource.Token);
+                await _clientWebSocket.ConnectAsync(_apiUri, _mainProcessCancellationTokenSource.Token);
+                _ = ListenForMessagesAsync(_mainProcessCancellationTokenSource.Token);
                 OnUnmatchedMessage += HandleUnmatchedMessage;
 
                 ApiResponse logonResponse = await SendRequestAsync(Gateway.Authentication, GatewayAction.Authenticate, new Dictionary<string, object>{ { "token", token } });
-                ApiResponse stationResponse = await SendRequestAsync(Gateway.Identity, GatewayAction.RegisterClient, new Dictionary<string, object> { { "stationCode", "YSSY" } });
+                return logonResponse.Status == "success";
+
                 /*ApiResponse messageResponse = await SendRequestAsync(Gateway.CPDLC, GatewayAction.SendCPDLCMessage, new Dictionary<string, object> {
                     { "recipient", "BAW15" },
                     { "responseCode", "N" },
@@ -52,30 +58,54 @@ namespace vatACARS.Services.Authority
             }
             catch (Exception)
             {
-                throw;
+                return false;
             }
+        }
+
+        public async Task<bool> StationLogon(string stationCode)
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            ApiResponse stationResponse = await SendRequestAsync(Gateway.Identity, GatewayAction.RegisterClient, new Dictionary<string, object> { { "stationCode", stationCode } });
+            return stationResponse.Status == "success";
+        }
+
+        public async Task<bool> StationLogoff()
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            ApiResponse logoffResponse = await SendRequestAsync(Gateway.Identity, GatewayAction.Logout, new Dictionary<string, object>() { });
+            return logoffResponse.Status == "success";
         }
 
         public async Task<ApiResponse> SendRequestAsync(Gateway gateway, GatewayAction action, Dictionary<string, object> data)
         {
-            if (_clientWebSocket.State != WebSocketState.Open) throw new InvalidOperationException("Websocket is not connected");
-
-            string requestId = Guid.NewGuid().ToString();
-            data["action"] = action;
-            data["requestId"] = requestId;
-
-            var payload = new Dictionary<string, object>
+            try
             {
-                { "event", gateway },
-                { "data", data }
-            };
+                if (_clientWebSocket.State != WebSocketState.Open) throw new InvalidOperationException("Websocket is not connected");
 
-            string message = JsonConvert.SerializeObject(payload);
-            var tcs = new TaskCompletionSource<ApiResponse> ();
-            _pendingResponses[requestId] = tcs;
+                string requestId = Guid.NewGuid().ToString();
+                data["action"] = action;
+                data["requestId"] = requestId;
 
-            await SendMessageAsync(message);
-            return await tcs.Task;
+                var payload = new Dictionary<string, object>
+                {
+                    { "event", gateway },
+                    { "data", data }
+                };
+
+                string message = JsonConvert.SerializeObject(payload);
+                var tcs = new TaskCompletionSource<ApiResponse>();
+                _pendingResponses[requestId] = tcs;
+
+                await SendMessageAsync(message);
+                return await tcs.Task;
+            } catch (Exception ex)
+            {
+                return new ApiResponse { Status = "error", Message = ex.Message };
+            }
         }
 
         public async Task SendMessageAsync(string message)
@@ -129,6 +159,7 @@ namespace vatACARS.Services.Authority
         private void ProcessReceivedMessage(string receivedMessage)
         {
             try {
+                if(_cancellationTokenSource.Token.IsCancellationRequested) return;
                 var response = JsonConvert.DeserializeObject<ApiResponse>(receivedMessage);
                 if(response != null && response.RequestId != "") { }
                 {
@@ -164,7 +195,7 @@ namespace vatACARS.Services.Authority
 
         public async void HandleUnmatchedMessage(string message)
         {
-            MessageBox.Show(message);
+            
         }
     }
 
