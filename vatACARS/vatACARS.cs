@@ -1,34 +1,36 @@
-﻿using System.ComponentModel.Composition;
+﻿using Newtonsoft.Json;
+using System;
+using System.ComponentModel.Composition;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Threading;
+using vatACARS.Helpers;
+using vatACARS.Services.Authority;
 using vatACARS.UI;
+using vatACARS.Util;
 using vatsys;
 using vatsys.Plugin;
-using System;
-using vatACARS.Services.Authority;
-using vatACARS.Util;
-using vatACARS.Helpers;
-using System.IO;
-using Newtonsoft.Json;
+using RossCarlson.Vatsim.Network;
 
 namespace vatACARS
 {
     [Export(typeof(IPlugin))]
     public class vatACARS : IPlugin
     {
-        public string Name { get => "vatACARSNext"; }
-        private readonly Logger logger = new Logger("vatACARS");
-        private CustomToolStripMenuItem acarsWindowMenu;
-        public bool Connected { get; set; }
-        public Label ASDLabel { get; set; }
-        private string _authToken;
-        private VatACARSAuthority VatACARSAuthority;
+        private static DispatchWindow dispatchWindow;
 
-        public static class AppData
-        {
-            public static Version CurrentVersion { get; } = new Version(2, 0, 0);
-        }
+        // Toolstrip items
+        private static PDCWindow pdcWindow;
+
+        private static SettingsWindow settingsWindow;
+        private readonly Logger logger = new Logger("vatACARS");
+        private string _authToken;
+        private CustomToolStripMenuItem dispatchWindowMenu;
+        private CustomToolStripMenuItem pdcWindowMenu;
+        private CustomToolStripMenuItem settingsWindowMenu;
+        private VatACARSAuthority VatACARSAuthority;
 
         public vatACARS()
         {
@@ -40,26 +42,56 @@ namespace vatACARS
 
             logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
 
+            Network.Connected += Vatsys_ConnectionChanged;
+            Network.Disconnected += Vatsys_ConnectionChanged;
+
             Thread startThread = new Thread(Start);
             startThread.Start();
 
             return;
         }
 
-        public async void Start()
+        public Label ASDLabel { get; set; }
+        public bool Connected { get; set; }
+        public string Name { get => "vatACARSNext"; }
+
+        public static void DoShowDispatchWindow()
         {
-            await Task.Delay(3000);
-
-
-            foreach (Form form in Application.OpenForms)
+            if (pdcWindow == null || pdcWindow.IsDisposed)
             {
-                if (form.Text.StartsWith("vatSys"))
-                {
-                    ASDLabel = MainASDLabel.Hook(form);
-                }
+                pdcWindow = new PDCWindow();
             }
+            else if (pdcWindow.Visible)
+            {
+                return;
+            }
+            pdcWindow.Show(Form.ActiveForm);
+        }
 
-            Authenticate();
+        public static void DoShowPDCWindow()
+        {
+            if (pdcWindow == null || pdcWindow.IsDisposed)
+            {
+                pdcWindow = new PDCWindow();
+            }
+            else if (pdcWindow.Visible)
+            {
+                return;
+            }
+            pdcWindow.Show(Form.ActiveForm);
+        }
+
+        public static void DoShowSettingsWindow()
+        {
+            if (settingsWindow == null || settingsWindow.IsDisposed)
+            {
+                settingsWindow = new SettingsWindow();
+            }
+            else if (settingsWindow.Visible)
+            {
+                return;
+            }
+            settingsWindow.Show(Form.ActiveForm);
         }
 
         public async void Authenticate()
@@ -90,11 +122,12 @@ namespace vatACARS
                 string authContent = File.ReadAllText(filePath);
                 dynamic authObject = JsonConvert.DeserializeObject(authContent);
                 _authToken = authObject?.token?.ToString();
-                if(string.IsNullOrEmpty(_authToken))
+                if (string.IsNullOrEmpty(_authToken))
                 {
                     throw new Exception("Token not found");
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 ASDLabel.UpdateVatACARSText("Failed to authenticate. Log out and back into the hub and then click here.");
                 logger.Log($"Failed to authenticate: {ex.Message}");
@@ -131,7 +164,7 @@ namespace vatACARS
 
             Network.Connected += async (_, e) =>
             {
-                if(Connected) return;
+                if (Connected) return;
 
                 VatACARSAuthority._cancellationTokenSource.Cancel();
                 VatACARSAuthority._cancellationTokenSource = new CancellationTokenSource();
@@ -155,7 +188,8 @@ namespace vatACARS
                     Connected = true;
                     await Task.Delay(2000, VatACARSAuthority._cancellationTokenSource.Token);
                     ASDLabel.UpdateVatACARSText("No new messages");
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     logger.Log($"Failed to connect to station: {ex.Message}");
                 }
@@ -175,15 +209,110 @@ namespace vatACARS
                     Connected = false;
                     await Task.Delay(2000, VatACARSAuthority._cancellationTokenSource.Token);
                     ASDLabel.UpdateVatACARSText("Ready");
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     logger.Log($"Failed to disconnect from station: {ex.Message}");
                 }
             };
         }
 
-        public void OnFDRUpdate(FDP2.FDR updated) { }
+        public void OnFDRUpdate(FDP2.FDR updated)
+        { }
 
-        public void OnRadarTrackUpdate(RDP.RadarTrack updated) { }
+        public void OnRadarTrackUpdate(RDP.RadarTrack updated)
+        { }
+
+        public async void Start()
+        {
+            await Task.Delay(3000);
+
+            foreach (Form form in Application.OpenForms)
+            {
+                if (form.Text.StartsWith("vatSys"))
+                {
+                    ASDLabel = MainASDLabel.Hook(form);
+                }
+            }
+
+            Authenticate();
+
+            // Add buttons to vatSys toolstrip
+            pdcWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+            new ToolStripMenuItem("PDC - ACARS")
+            );
+            pdcWindowMenu.Item.Click += pdcWindowMenu_Click;
+            pdcWindowMenu.Item.Enabled = false;
+
+            dispatchWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+                new ToolStripMenuItem("Dispatch - ACARS")
+                );
+            dispatchWindowMenu.Item.Click += DispatchWindowMenu_Click;
+            dispatchWindowMenu.Item.Enabled = false;
+
+            settingsWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+                new ToolStripMenuItem("Settings - ACARS")
+                );
+            settingsWindowMenu.Item.Click += SettingsWindowMenu_Click;
+            settingsWindowMenu.Item.Enabled = true;
+
+            MMI.AddCustomMenuItem(pdcWindowMenu);
+            MMI.AddCustomMenuItem(dispatchWindowMenu);
+            MMI.AddCustomMenuItem(settingsWindowMenu);
+        }
+
+        private void DispatchWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowDispatchWindow());
+        }
+
+        private void pdcWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowPDCWindow());
+        }
+
+        private void SettingsWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowSettingsWindow());
+        }
+
+        private void Vatsys_ConnectionChanged(object sender, EventArgs e)
+        {
+            if (!Network.IsConnected)
+            {
+                logger.Log("Disconnected");
+                MMI.InvokeOnGUI(() =>
+                {
+                    pdcWindowMenu.Item.Enabled = false;
+                    pdcWindow?.Close();
+                    dispatchWindowMenu.Item.Enabled = false;
+                    dispatchWindow?.Close();
+                });
+                return;
+            }
+
+            var station = MMI.PrimePosition.ArrivalListAirports.FirstOrDefault();
+            logger.Log($"Connected to {station}");
+
+            if (station != null)
+            {
+                MMI.InvokeOnGUI(() =>
+                {
+                    pdcWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.S1;
+                    dispatchWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.C1;
+                });
+            }
+        }
+
+        public static class AppData
+        {
+            public static Version CurrentVersion { get; } = new Version(2, 0, 0);
+        }
     }
 }
