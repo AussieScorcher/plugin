@@ -284,31 +284,37 @@ namespace vatACARS
 
         private void Vatsys_ConnectionChanged(object sender, EventArgs e)
         {
-            if (!Network.IsConnected)
-            {
-                logger.Log("Disconnected");
-                MMI.InvokeOnGUI(() =>
+            try {
+                if (!Network.IsConnected)
                 {
-                    pdcWindowMenu.Item.Enabled = false;
-                    pdcWindow?.Close();
-                    dispatchWindowMenu.Item.Enabled = false;
-                    dispatchWindow?.Close();
-                });
-                return;
-            }
+                    logger.Log("Disconnected");
+                    MMI.InvokeOnGUI(() =>
+                    {
+                        pdcWindowMenu.Item.Enabled = false;
+                        pdcWindow?.Close();
+                        dispatchWindowMenu.Item.Enabled = false;
+                        dispatchWindow?.Close();
+                    });
+                    return;
+                }
 
-            var station = MMI.PrimePosition.ArrivalListAirports.FirstOrDefault();
-            logger.Log($"Connected to {station}");
+                var station = MMI.PrimePosition.ArrivalListAirports.FirstOrDefault();
+                logger.Log($"Connected to {station}");
 
-            if (station != null)
-            {
-                MMI.InvokeOnGUI(() =>
+                if (station != null)
                 {
-                    pdcWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.S1;
-                    dispatchWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.C1;
-                });
+                    MMI.InvokeOnGUI(() =>
+                    {
+                        pdcWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.S1;
+                        dispatchWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.C1;
+                    });
+                }
+            } catch (Exception ex)
+            {
+                logger.Log($"Error: {ex.Message}");
             }
         }
+
 
         public static class AppData
         {
