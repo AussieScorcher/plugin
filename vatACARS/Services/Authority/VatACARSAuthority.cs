@@ -7,7 +7,6 @@ using vatACARS.Models.Enums;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Windows.Forms;
 using vatsys;
 
 namespace vatACARS.Services.Authority
@@ -64,18 +63,12 @@ namespace vatACARS.Services.Authority
 
         public async Task<bool> StationLogon(string stationCode)
         {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource = new CancellationTokenSource();
-
             ApiResponse stationResponse = await SendRequestAsync(Gateway.Identity, GatewayAction.RegisterClient, new Dictionary<string, object> { { "stationCode", stationCode } });
             return stationResponse.Status == "success";
         }
 
         public async Task<bool> StationLogoff()
         {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource = new CancellationTokenSource();
-
             ApiResponse logoffResponse = await SendRequestAsync(Gateway.Identity, GatewayAction.Logout, new Dictionary<string, object>() { });
             return logoffResponse.Status == "success";
         }

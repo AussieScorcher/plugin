@@ -1,189 +1,212 @@
-﻿using System.ComponentModel.Composition;
+﻿using System;
+using System.ComponentModel.Composition;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Threading;
+using Newtonsoft.Json;
+using vatACARS.Helpers;
+using vatACARS.Services.Authority;
 using vatACARS.UI;
+using vatACARS.Util;
 using vatsys;
 using vatsys.Plugin;
-using System;
-using vatACARS.Services.Authority;
-using vatACARS.Util;
-using vatACARS.Helpers;
-using System.IO;
-using Newtonsoft.Json;
 
 namespace vatACARS
 {
-    [Export(typeof(IPlugin))]
-    public class vatACARS : IPlugin
+    public static class AppData
     {
-        public string Name { get => "vatACARSNext"; }
-        private readonly Logger logger = new Logger("vatACARS");
-        private CustomToolStripMenuItem acarsWindowMenu;
-        public bool Connected { get; set; }
-        public Label ASDLabel { get; set; }
-        private string _authToken;
-        private VatACARSAuthority VatACARSAuthority;
+        public static Version CurrentVersion { get; } = new Version(2, 0, 0);
+    }
 
-        public static class AppData
+    [Export(typeof(IPlugin))]
+    public class VatACARS : IPlugin
+    {
+        public string Name => "vatACARSNext";
+        private readonly Logger _logger = new Logger("vatACARS");
+        private readonly VatACARSAuthority _vatACARSAuthority;
+        private string _authToken;
+        private Label _asdLabel;
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        public bool Connected { get; private set; }
+
+        public VatACARS()
         {
-            public static Version CurrentVersion { get; } = new Version(2, 0, 0);
+            _vatACARSAuthority = new VatACARSAuthority("ws://vatacars.com:3000/gateway");
+            InitializeDirectories();
+
+            _logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
+            StartAsync().ConfigureAwait(false);
         }
 
-        public vatACARS()
+        private void InitializeDirectories()
         {
-            VatACARSAuthority = new VatACARSAuthority("ws://vatacars.com:3000/gateway");
             string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "vatACARS");
             Directory.CreateDirectory(dataPath);
             Directory.CreateDirectory(Path.Combine(dataPath, "data"));
             Directory.CreateDirectory(Path.Combine(dataPath, "profiles"));
-
-            logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
-
-            Thread startThread = new Thread(Start);
-            startThread.Start();
-
-            return;
         }
 
-        public async void Start()
+        private async Task StartAsync()
         {
             await Task.Delay(3000);
+            AttachToVatSysForms();
+            await AuthenticateAsync();
+        }
 
-
+        private void AttachToVatSysForms()
+        {
             foreach (Form form in Application.OpenForms)
             {
                 if (form.Text.StartsWith("vatSys"))
                 {
-                    ASDLabel = MainASDLabel.Hook(form);
+                    _asdLabel = MainASDLabel.Hook(form);
                 }
             }
-
-            Authenticate();
         }
 
-        public async void Authenticate()
+        private async Task AuthenticateAsync()
         {
-            MouseEventHandler clickHandler = null;
-            ASDLabel.UpdateVatACARSText("Authenticating...");
-            string localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string filePath = Path.Combine(localAppDataPath, "vatACARS", "_auth.json");
+            _asdLabel?.UpdateVatACARSText("Authenticating...");
+            string authFilePath = GetAuthFilePath();
 
-            if (!File.Exists(filePath))
+            if (!File.Exists(authFilePath))
             {
-                ASDLabel.UpdateVatACARSText("Please login to the hub and then click here.");
-                clickHandler = (sender, e) =>
-                {
-                    if (e.Button == MouseButtons.Left)
-                    {
-                        Authenticate();
-                        ASDLabel.MouseClick -= clickHandler;
-                    }
-                };
-                ASDLabel.MouseClick += clickHandler;
-
+                await PromptForLoginAsync("Please login to the hub and then click here.");
                 return;
             }
+
+            if (!TryLoadAuthToken(authFilePath))
+            {
+                await PromptForLoginAsync("Failed to authenticate. Log out and back into the hub and then click here.");
+                return;
+            }
+
+            if (!await _vatACARSAuthority.ConnectAsync(_authToken))
+            {
+                await PromptForLoginAsync("Failed to authenticate. Log out and back into the hub and then click here.");
+                return;
+            }
+
+            _asdLabel?.UpdateVatACARSText("Ready");
+            SetupNetworkEvents();
+        }
+
+        private string GetAuthFilePath()
+        {
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(localAppData, "vatACARS", "_auth.json");
+        }
+
+        private bool TryLoadAuthToken(string authFilePath)
+        {
+            try
+            {
+                string authContent = File.ReadAllText(authFilePath);
+                dynamic authObject = JsonConvert.DeserializeObject(authContent);
+                _authToken = authObject?.token?.ToString();
+                return !string.IsNullOrEmpty(_authToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Failed to load auth token: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task PromptForLoginAsync(string message)
+        {
+            _asdLabel?.UpdateVatACARSText(message);
+            await HandleClickToRetryAsync(AuthenticateAsync);
+        }
+
+        private async Task HandleClickToRetryAsync(Func<Task> retryAction)
+        {
+            MouseEventHandler clickHandler = null;
+            clickHandler = async (_, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    _asdLabel.MouseClick -= clickHandler;
+                    await retryAction();
+                }
+            };
+            _asdLabel.MouseClick += clickHandler;
+        }
+
+        private void SetupNetworkEvents()
+        {
+            Network.Connected += async (_, e) => await HandleNetworkConnectedAsync();
+            Network.Disconnected += async (_, e) => await HandleNetworkDisconnectedAsync();
+        }
+
+        private async Task HandleNetworkConnectedAsync()
+        {
+            if (Connected) return;
+
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource = new CancellationTokenSource();
 
             try
             {
-                string authContent = File.ReadAllText(filePath);
-                dynamic authObject = JsonConvert.DeserializeObject(authContent);
-                _authToken = authObject?.token?.ToString();
-                if(string.IsNullOrEmpty(_authToken))
+                CancellationToken token = _cancellationTokenSource.Token;
+                _asdLabel?.UpdateVatACARSText("Please wait...");
+                await Task.Delay(3000, token);
+
+                string station = VatSys.GetStation();
+                _asdLabel?.SetVatACARSPrefix($"vatACARS [{station}]");
+                _asdLabel?.UpdateVatACARSText($"Connecting to {station}...");
+
+                if (await _vatACARSAuthority.StationLogon(station))
                 {
-                    throw new Exception("Token not found");
-                }
-            } catch (Exception ex)
-            {
-                ASDLabel.UpdateVatACARSText("Failed to authenticate. Log out and back into the hub and then click here.");
-                logger.Log($"Failed to authenticate: {ex.Message}");
-                clickHandler = (sender, e) =>
-                {
-                    if (e.Button == MouseButtons.Left)
-                    {
-                        Authenticate();
-                        ASDLabel.MouseClick -= clickHandler;
-                    }
-                };
-                ASDLabel.MouseClick += clickHandler;
-                return;
-            }
-
-            bool connection = await VatACARSAuthority.ConnectAsync(_authToken);
-            if (!connection)
-            {
-                ASDLabel.UpdateVatACARSText("Failed to authenticate. Log out and back into the hub and then click here.");
-                logger.Log("Failed to connect to vatACARS, bad token?");
-                clickHandler = (sender, e) =>
-                {
-                    if (e.Button == MouseButtons.Left)
-                    {
-                        Authenticate();
-                        ASDLabel.MouseClick -= clickHandler;
-                    }
-                };
-                ASDLabel.MouseClick += clickHandler;
-                return;
-            }
-
-            ASDLabel.UpdateVatACARSText("Ready");
-
-            Network.Connected += async (_, e) =>
-            {
-                if(Connected) return;
-
-                VatACARSAuthority._cancellationTokenSource.Cancel();
-                VatACARSAuthority._cancellationTokenSource = new CancellationTokenSource();
-
-                try
-                {
-                    ASDLabel.UpdateVatACARSText("Please wait...");
-                    await Task.Delay(3000, VatACARSAuthority._cancellationTokenSource.Token);
-                    string station = VatSys.GetStation();
-                    ASDLabel.SetVatACARSPrefix($"vatACARS [{station}]");
-                    ASDLabel.UpdateVatACARSText($"Connecting to {station}...");
-                    bool stationConnection = await VatACARSAuthority.StationLogon(station);
-                    if (!stationConnection)
-                    {
-                        ASDLabel.UpdateVatACARSText("Failed to connect to station");
-                        await Task.Delay(2000, VatACARSAuthority._cancellationTokenSource.Token);
-                        ASDLabel.UpdateVatACARSText("Ready");
-                        return;
-                    }
-                    ASDLabel.UpdateVatACARSText($"Connected to {station}");
                     Connected = true;
-                    await Task.Delay(2000, VatACARSAuthority._cancellationTokenSource.Token);
-                    ASDLabel.UpdateVatACARSText("No new messages");
-                } catch (Exception ex)
-                {
-                    logger.Log($"Failed to connect to station: {ex.Message}");
+                    _asdLabel?.UpdateVatACARSText($"Connected to {station}");
                 }
-            };
+                else
+                {
+                    _asdLabel?.UpdateVatACARSText("Failed to connect to station");
+                    await Task.Delay(2000, token);
+                    _asdLabel?.UpdateVatACARSText("Ready");
+                    return;
+                }
 
-            Network.Disconnected += async (_, e) =>
+                await Task.Delay(2000, token);
+                _asdLabel?.UpdateVatACARSText("No new messages");
+            }
+            catch (Exception ex)
             {
-                VatACARSAuthority._cancellationTokenSource.Cancel();
-                VatACARSAuthority._cancellationTokenSource = new CancellationTokenSource();
-
-                try
+                _logger.Log($"Failed to connect to station: {ex.Message}");
+                if (ex is TaskCanceledException)
                 {
-                    ASDLabel.SetVatACARSPrefix($"vatACARS v{vatACARS.AppData.CurrentVersion}");
-                    ASDLabel.UpdateVatACARSText("Logging off...");
-                    await VatACARSAuthority.StationLogoff();
-                    ASDLabel.UpdateVatACARSText("Disconnected from network.");
-                    Connected = false;
-                    await Task.Delay(2000, VatACARSAuthority._cancellationTokenSource.Token);
-                    ASDLabel.UpdateVatACARSText("Ready");
-                } catch (Exception ex)
-                {
-                    logger.Log($"Failed to disconnect from station: {ex.Message}");
+                    _asdLabel?.UpdateVatACARSText("Ready");
+                    return;
                 }
-            };
+            }
+        }
+
+        private async Task HandleNetworkDisconnectedAsync()
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            try
+            {
+                _asdLabel?.SetVatACARSPrefix($"vatACARS v{AppData.CurrentVersion}");
+                _asdLabel?.UpdateVatACARSText("Logging off...");
+                await _vatACARSAuthority.StationLogoff();
+
+                Connected = false;
+                _asdLabel?.UpdateVatACARSText("Disconnected from network.");
+                await Task.Delay(2000, _cancellationTokenSource.Token);
+                _asdLabel?.UpdateVatACARSText("Ready");
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Failed to disconnect from station: {ex.Message}");
+            }
         }
 
         public void OnFDRUpdate(FDP2.FDR updated) { }
-
         public void OnRadarTrackUpdate(RDP.RadarTrack updated) { }
     }
 }
