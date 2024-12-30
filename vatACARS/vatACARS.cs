@@ -1,16 +1,18 @@
-﻿using System;
+using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 using vatACARS.Helpers;
 using vatACARS.Services.Authority;
 using vatACARS.UI;
 using vatACARS.Util;
 using vatsys;
 using vatsys.Plugin;
+using Newtonsoft.Json;
+using RossCarlson.Vatsim.Network;
 
 namespace vatACARS
 {
@@ -29,6 +31,13 @@ namespace vatACARS
         private Label _asdLabel;
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         public bool Connected { get; private set; }
+
+        private CustomToolStripMenuItem dispatchWindowMenu;
+        private CustomToolStripMenuItem pdcWindowMenu;
+        private CustomToolStripMenuItem settingsWindowMenu;
+        private static DispatchWindow dispatchWindow;
+        private static PDCWindow pdcWindow;
+        private static SettingsWindow settingsWindow;
 
         public VatACARS()
         {
@@ -49,6 +58,34 @@ namespace vatACARS
 
         private async Task StartAsync()
         {
+            pdcWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+            new ToolStripMenuItem("PDC - ACARS")
+            );
+            pdcWindowMenu.Item.Click += pdcWindowMenu_Click;
+            pdcWindowMenu.Item.Enabled = false;
+
+            dispatchWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+                new ToolStripMenuItem("Dispatch - ACARS")
+                );
+            dispatchWindowMenu.Item.Click += DispatchWindowMenu_Click;
+            dispatchWindowMenu.Item.Enabled = false;
+
+            settingsWindowMenu = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                CustomToolStripMenuItemCategory.Windows,
+                new ToolStripMenuItem("Settings - ACARS")
+                );
+            settingsWindowMenu.Item.Click += SettingsWindowMenu_Click;
+            settingsWindowMenu.Item.Enabled = true;
+
+            MMI.AddCustomMenuItem(pdcWindowMenu);
+            MMI.AddCustomMenuItem(dispatchWindowMenu);
+            MMI.AddCustomMenuItem(settingsWindowMenu);
+            
             await Task.Delay(3000);
             AttachToVatSysForms();
             await AuthenticateAsync();
@@ -63,6 +100,55 @@ namespace vatACARS
                     _asdLabel = MainASDLabel.Hook(form);
                 }
             }
+
+            logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
+
+            Network.Connected += Vatsys_ConnectionChanged;
+            Network.Disconnected += Vatsys_ConnectionChanged;
+
+            Thread startThread = new Thread(Start);
+            startThread.Start();
+
+            return;
+        }
+
+        public static void DoShowDispatchWindow()
+        {
+            if (pdcWindow == null || pdcWindow.IsDisposed)
+            {
+                pdcWindow = new PDCWindow();
+            }
+            else if (pdcWindow.Visible)
+            {
+                return;
+            }
+            pdcWindow.Show(Form.ActiveForm);
+        }
+
+        public static void DoShowPDCWindow()
+        {
+            if (pdcWindow == null || pdcWindow.IsDisposed)
+            {
+                pdcWindow = new PDCWindow();
+            }
+            else if (pdcWindow.Visible)
+            {
+                return;
+            }
+            pdcWindow.Show(Form.ActiveForm);
+        }
+
+        public static void DoShowSettingsWindow()
+        {
+            if (settingsWindow == null || settingsWindow.IsDisposed)
+            {
+                settingsWindow = new SettingsWindow();
+            }
+            else if (settingsWindow.Visible)
+            {
+                return;
+            }
+            settingsWindow.Show(Form.ActiveForm);
         }
 
         private async Task AuthenticateAsync()
@@ -208,5 +294,53 @@ namespace vatACARS
 
         public void OnFDRUpdate(FDP2.FDR updated) { }
         public void OnRadarTrackUpdate(RDP.RadarTrack updated) { }
+
+        private void DispatchWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowDispatchWindow());
+        }
+
+        private void pdcWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowPDCWindow());
+        }
+
+        private void SettingsWindowMenu_Click(object sender, EventArgs e)
+        {
+            MMI.InvokeOnGUI(() => DoShowSettingsWindow());
+        }
+
+        private void Vatsys_ConnectionChanged(object sender, EventArgs e)
+        {
+            try {
+                if (!Network.IsConnected)
+                {
+                    logger.Log("Disconnected");
+                    MMI.InvokeOnGUI(() =>
+                    {
+                        pdcWindowMenu.Item.Enabled = false;
+                        pdcWindow?.Close();
+                        dispatchWindowMenu.Item.Enabled = false;
+                        dispatchWindow?.Close();
+                    });
+                    return;
+                }
+
+                var station = MMI.PrimePosition.ArrivalListAirports.FirstOrDefault();
+                logger.Log($"Connected to {station}");
+
+                if (station != null)
+                {
+                    MMI.InvokeOnGUI(() =>
+                    {
+                        pdcWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.S1;
+                        dispatchWindowMenu.Item.Enabled = Network.Rating >= NetworkRating.C1;
+                    });
+                }
+            } catch (Exception ex)
+            {
+                logger.Log($"Error: {ex.Message}");
+            }
+        }
     }
 }

@@ -53,6 +53,10 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="RossCarlson.Vatsim.Network, Version=2.4.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\vatSys\bin\RossCarlson.Vatsim.Network.dll</HintPath>
+    </Reference>
     <Reference Include="SharpDX, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpDX.4.2.0\lib\net45\SharpDX.dll</HintPath>
     </Reference>
@@ -103,16 +107,38 @@
     <Compile Include="Services\Stations\StationManager.cs" />
     <Compile Include="UI\Controls\MainASDLabel.cs" />
     <Compile Include="UI\Controls\MainASDLabelExtensions.cs" />
+    <Compile Include="UI\Windows\DispatchWindow.cs">
+      <SubType>designer</SubType>
+    </Compile>
+    <Compile Include="UI\Windows\DispatchWindow.Designer.cs">
+      <DependentUpon>DispatchWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Windows\PDCWindow.cs">
+      <SubType>designer</SubType>
+    </Compile>
+    <Compile Include="UI\Windows\PDCWindow.Designer.cs">
+      <DependentUpon>PDCWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Windows\SettingsWindow.cs">
+      <SubType>designer</SubType>
+    </Compile>
+    <Compile Include="UI\Windows\SettingsWindow.Designer.cs">
+      <DependentUpon>SettingsWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="vatACARS.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Events\Handlers\" />
-    <Folder Include="UI\Windows\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UI\Windows\PDCWindow.resx">
+      <DependentUpon>PDCWindow.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
