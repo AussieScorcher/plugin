@@ -29,7 +29,9 @@ namespace vatACARS
         private readonly VatACARSAuthority _vatACARSAuthority;
         private string _authToken;
         private Label _asdLabel;
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource _networkCancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource _logonCancellationTokenSource = new CancellationTokenSource();
+
         public bool Connected { get; private set; }
 
         private CustomToolStripMenuItem dispatchWindowMenu;
@@ -41,7 +43,7 @@ namespace vatACARS
 
         public VatACARS()
         {
-            _vatACARSAuthority = new VatACARSAuthority("ws://vatacars.com:3000/gateway");
+            _vatACARSAuthority = new VatACARSAuthority("ws://api.vatacars.com/gateway"); //ws://localhost:3000/gateway
             InitializeDirectories();
 
             _logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
@@ -58,6 +60,8 @@ namespace vatACARS
 
         private async Task StartAsync()
         {
+            _logger.Log($"Starting...");
+
             pdcWindowMenu = new CustomToolStripMenuItem(
                 CustomToolStripMenuItemWindowType.Main,
                 CustomToolStripMenuItemCategory.Windows,
@@ -85,14 +89,15 @@ namespace vatACARS
             MMI.AddCustomMenuItem(pdcWindowMenu);
             MMI.AddCustomMenuItem(dispatchWindowMenu);
             MMI.AddCustomMenuItem(settingsWindowMenu);
-            
-            await Task.Delay(3000);
+
+            _ = AuthenticateAsync();
             AttachToVatSysForms();
-            await AuthenticateAsync();
+            _logger.Log("Ready to rock and roll");
         }
 
-        private void AttachToVatSysForms()
+        private async void AttachToVatSysForms()
         {
+            await Task.Delay(3000);
             foreach (Form form in Application.OpenForms)
             {
                 if (form.Text.StartsWith("vatSys"))
@@ -100,16 +105,6 @@ namespace vatACARS
                     _asdLabel = MainASDLabel.Hook(form);
                 }
             }
-
-            logger.Log($"vatACARS v{AppData.CurrentVersion} on {RegHelper.FriendlyName()}");
-
-            Network.Connected += Vatsys_ConnectionChanged;
-            Network.Disconnected += Vatsys_ConnectionChanged;
-
-            Thread startThread = new Thread(Start);
-            startThread.Start();
-
-            return;
         }
 
         public static void DoShowDispatchWindow()
@@ -153,26 +148,9 @@ namespace vatACARS
 
         private async Task AuthenticateAsync()
         {
-            _asdLabel?.UpdateVatACARSText("Authenticating...");
             string authFilePath = GetAuthFilePath();
-
-            if (!File.Exists(authFilePath))
-            {
-                await PromptForLoginAsync("Please login to the hub and then click here.");
-                return;
-            }
-
-            if (!TryLoadAuthToken(authFilePath))
-            {
-                await PromptForLoginAsync("Failed to authenticate. Log out and back into the hub and then click here.");
-                return;
-            }
-
-            if (!await _vatACARSAuthority.ConnectAsync(_authToken))
-            {
-                await PromptForLoginAsync("Failed to authenticate. Log out and back into the hub and then click here.");
-                return;
-            }
+            TryLoadAuthToken(authFilePath);
+            await _vatACARSAuthority.ConnectAsync(_authToken);
 
             _asdLabel?.UpdateVatACARSText("Ready");
             SetupNetworkEvents();
@@ -200,26 +178,6 @@ namespace vatACARS
             }
         }
 
-        private async Task PromptForLoginAsync(string message)
-        {
-            _asdLabel?.UpdateVatACARSText(message);
-            await HandleClickToRetryAsync(AuthenticateAsync);
-        }
-
-        private async Task HandleClickToRetryAsync(Func<Task> retryAction)
-        {
-            MouseEventHandler clickHandler = null;
-            clickHandler = async (_, e) =>
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    _asdLabel.MouseClick -= clickHandler;
-                    await retryAction();
-                }
-            };
-            _asdLabel.MouseClick += clickHandler;
-        }
-
         private void SetupNetworkEvents()
         {
             Network.Connected += async (_, e) => await HandleNetworkConnectedAsync();
@@ -230,60 +188,49 @@ namespace vatACARS
         {
             if (Connected) return;
 
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource = new CancellationTokenSource();
-
             try
             {
-                CancellationToken token = _cancellationTokenSource.Token;
-                _asdLabel?.UpdateVatACARSText("Please wait...");
+                CancellationToken token = _logonCancellationTokenSource.Token;
                 await Task.Delay(3000, token);
 
-                string station = VatSys.GetStation();
-                _asdLabel?.SetVatACARSPrefix($"vatACARS [{station}]");
-                _asdLabel?.UpdateVatACARSText($"Connecting to {station}...");
+                string station = await VatSys.GetStationAsync(token);
 
-                if (await _vatACARSAuthority.StationLogon(station))
-                {
-                    Connected = true;
-                    _asdLabel?.UpdateVatACARSText($"Connected to {station}");
-                }
-                else
+                _asdLabel?.SetVatACARSPrefix($"vatACARS [{station}]");
+                _asdLabel?.UpdateVatACARSText($"Connecting...");
+
+                if (!await _vatACARSAuthority.StationLogon(station))
                 {
                     _asdLabel?.UpdateVatACARSText("Failed to connect to station");
-                    await Task.Delay(2000, token);
-                    _asdLabel?.UpdateVatACARSText("Ready");
                     return;
                 }
 
-                await Task.Delay(2000, token);
+                Connected = true;
                 _asdLabel?.UpdateVatACARSText("No new messages");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.Log("Network connection cancelled.");
+                _asdLabel?.UpdateVatACARSText("Ready");
             }
             catch (Exception ex)
             {
                 _logger.Log($"Failed to connect to station: {ex.Message}");
-                if (ex is TaskCanceledException)
-                {
-                    _asdLabel?.UpdateVatACARSText("Ready");
-                    return;
-                }
+                _asdLabel?.UpdateVatACARSText($"Error occurred: {ex.Message}");
             }
         }
 
         private async Task HandleNetworkDisconnectedAsync()
         {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource = new CancellationTokenSource();
-
             try
             {
+                _logonCancellationTokenSource.Cancel();
+                _logonCancellationTokenSource = new CancellationTokenSource();
+
                 _asdLabel?.SetVatACARSPrefix($"vatACARS v{AppData.CurrentVersion}");
                 _asdLabel?.UpdateVatACARSText("Logging off...");
                 await _vatACARSAuthority.StationLogoff();
 
                 Connected = false;
-                _asdLabel?.UpdateVatACARSText("Disconnected from network.");
-                await Task.Delay(2000, _cancellationTokenSource.Token);
                 _asdLabel?.UpdateVatACARSText("Ready");
             }
             catch (Exception ex)
@@ -315,7 +262,7 @@ namespace vatACARS
             try {
                 if (!Network.IsConnected)
                 {
-                    logger.Log("Disconnected");
+                    _logger.Log("Disconnected");
                     MMI.InvokeOnGUI(() =>
                     {
                         pdcWindowMenu.Item.Enabled = false;
@@ -327,7 +274,7 @@ namespace vatACARS
                 }
 
                 var station = MMI.PrimePosition.ArrivalListAirports.FirstOrDefault();
-                logger.Log($"Connected to {station}");
+                _logger.Log($"Connected to {station}");
 
                 if (station != null)
                 {
@@ -339,7 +286,7 @@ namespace vatACARS
                 }
             } catch (Exception ex)
             {
-                logger.Log($"Error: {ex.Message}");
+                _logger.Log($"Error: {ex.Message}");
             }
         }
     }
